@@ -158,12 +158,14 @@ class _CategoryReportState extends State<_CategoryReport>
                                 if (!event.isInterestedForInteractions ||
                                     idx == null ||
                                     idx < 0) {
-                                  if (_touched != null)
+                                  if (_touched != null) {
                                     setState(() => _touched = null);
+                                  }
                                   return;
                                 }
-                                if (idx != _touched)
+                                if (idx != _touched) {
                                   setState(() => _touched = idx);
+                                }
                               },
                             ),
                             sections: [

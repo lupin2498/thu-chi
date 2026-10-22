@@ -1,3 +1,4 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 // Chụp ảnh màn hình bằng font thật để soát giao diện:
 //   flutter test --update-goldens test_screens/
 import 'dart:io';

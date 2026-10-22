@@ -129,10 +129,11 @@ class _PopupHostState extends State<PopupHost> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop)
+        if (!didPop) {
           _onDone(
             current != null ? QuickAddOutcome.later : QuickAddOutcome.cancelled,
           );
+        }
       },
       child: Scaffold(
         backgroundColor: Colors.black.withValues(alpha: 0.35),

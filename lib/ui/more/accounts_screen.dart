@@ -166,8 +166,9 @@ class _AccountTxnListState extends State<_AccountTxnList> {
         future: _future,
         builder: (context, snap) {
           final list = snap.data;
-          if (list == null)
+          if (list == null) {
             return const Center(child: CircularProgressIndicator());
+          }
           if (list.isEmpty) {
             return const EmptyState(
               icon: Icons.receipt_long,
