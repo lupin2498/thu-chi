@@ -23,6 +23,8 @@ class BankParserTest {
     @Test
     fun fixtures() {
         val arr = JSONArray(fixtureFile().readText())
+        // Chống "pass giả" nếu org.json bản stub của android.jar được dùng thay bản thật.
+        assertTrue("Đọc được quá ít mẫu: ${arr.length()}", arr.length() >= 25)
         val failures = mutableListOf<String>()
         for (i in 0 until arr.length()) {
             val f = arr.getJSONObject(i)
