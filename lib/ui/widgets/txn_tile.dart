@@ -9,7 +9,12 @@ import 'common.dart';
 
 /// Một dòng giao dịch trong danh sách.
 class TxnTile extends StatelessWidget {
-  const TxnTile({super.key, required this.txn, this.onTap, this.showDate = false});
+  const TxnTile({
+    super.key,
+    required this.txn,
+    this.onTap,
+    this.showDate = false,
+  });
 
   final TransactionRecord txn;
   final VoidCallback? onTap;
@@ -30,7 +35,8 @@ class TxnTile extends StatelessWidget {
       icon = 'transfer';
       color = 0xFF1E88E5;
     } else {
-      title = cat?.name ?? (txn.type == TxnType.income ? 'Thu khác' : 'Chi khác');
+      title =
+          cat?.name ?? (txn.type == TxnType.income ? 'Thu khác' : 'Chi khác');
       icon = cat?.icon ?? 'other';
       color = cat?.color ?? 0xFF78909C;
     }

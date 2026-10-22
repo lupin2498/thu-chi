@@ -13,7 +13,14 @@ import '../widgets/txn_tile.dart';
 
 /// Sổ giao dịch: danh sách theo tháng, nhóm theo ngày.
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key, this.categoryId, this.title, this.start, this.end, this.type});
+  const TransactionsScreen({
+    super.key,
+    this.categoryId,
+    this.title,
+    this.start,
+    this.end,
+    this.type,
+  });
 
   /// Lọc theo hạng mục (mở từ báo cáo).
   final int? categoryId;
@@ -57,7 +64,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final searchAll = _search.trim().isNotEmpty;
     return s.repo.transactions(
       start: _fixedRange ? widget.start : (searchAll ? null : _month),
-      end: _fixedRange ? widget.end : (searchAll ? null : nextMonthStart(_month)),
+      end: _fixedRange
+          ? widget.end
+          : (searchAll ? null : nextMonthStart(_month)),
       type: _type,
       accountId: _accountId,
       categoryId: widget.categoryId,
@@ -130,14 +139,37 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 if (v == 'acc_all') _accountId = null;
               }),
               itemBuilder: (_) => [
-                const PopupMenuItem(enabled: false, child: Text('Loại giao dịch')),
-                CheckedPopupMenuItem(value: 'all', checked: _type == null, child: const Text('Tất cả')),
-                CheckedPopupMenuItem(value: 'expense', checked: _type == TxnType.expense, child: const Text('Chi tiền')),
-                CheckedPopupMenuItem(value: 'income', checked: _type == TxnType.income, child: const Text('Thu tiền')),
-                CheckedPopupMenuItem(value: 'transfer', checked: _type == TxnType.transfer, child: const Text('Chuyển khoản')),
+                const PopupMenuItem(
+                  enabled: false,
+                  child: Text('Loại giao dịch'),
+                ),
+                CheckedPopupMenuItem(
+                  value: 'all',
+                  checked: _type == null,
+                  child: const Text('Tất cả'),
+                ),
+                CheckedPopupMenuItem(
+                  value: 'expense',
+                  checked: _type == TxnType.expense,
+                  child: const Text('Chi tiền'),
+                ),
+                CheckedPopupMenuItem(
+                  value: 'income',
+                  checked: _type == TxnType.income,
+                  child: const Text('Thu tiền'),
+                ),
+                CheckedPopupMenuItem(
+                  value: 'transfer',
+                  checked: _type == TxnType.transfer,
+                  child: const Text('Chuyển khoản'),
+                ),
                 const PopupMenuDivider(),
                 const PopupMenuItem(enabled: false, child: Text('Tài khoản')),
-                CheckedPopupMenuItem(value: 'acc_all', checked: _accountId == null, child: const Text('Tất cả tài khoản')),
+                CheckedPopupMenuItem(
+                  value: 'acc_all',
+                  checked: _accountId == null,
+                  child: const Text('Tất cả tài khoản'),
+                ),
                 for (final a in state.accounts)
                   CheckedPopupMenuItem(
                     value: 'acc:${a.id}',
@@ -224,12 +256,27 @@ class _GroupedList extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: Card(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 8,
+                ),
                 child: Row(
                   children: [
-                    _SummaryCell(label: 'Thu', value: income, color: kIncomeColor),
-                    _SummaryCell(label: 'Chi', value: expense, color: kExpenseColor),
-                    _SummaryCell(label: 'Chênh lệch', value: income - expense, color: null),
+                    _SummaryCell(
+                      label: 'Thu',
+                      value: income,
+                      color: kIncomeColor,
+                    ),
+                    _SummaryCell(
+                      label: 'Chi',
+                      value: expense,
+                      color: kExpenseColor,
+                    ),
+                    _SummaryCell(
+                      label: 'Chênh lệch',
+                      value: income - expense,
+                      color: null,
+                    ),
                   ],
                 ),
               ),
@@ -256,14 +303,22 @@ class _GroupedList extends StatelessWidget {
                     children: [
                       Text(
                         day.day.toString().padLeft(2, '0'),
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(friendlyDay(day), style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              friendlyDay(day),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             Text(
                               'Tháng ${day.month}/${day.year}',
                               style: Theme.of(context).textTheme.bodySmall,
@@ -303,7 +358,11 @@ class _GroupedList extends StatelessWidget {
 }
 
 class _SummaryCell extends StatelessWidget {
-  const _SummaryCell({required this.label, required this.value, required this.color});
+  const _SummaryCell({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   final String label;
   final int value;
@@ -348,7 +407,8 @@ class _DismissibleTxn extends StatelessWidget {
       confirmDismiss: (_) => confirmDialog(
         context,
         title: 'Xoá giao dịch?',
-        message: '${txn.type.label} ${formatMoney(txn.amount)}${txn.note.isNotEmpty ? ' – ${txn.note}' : ''}',
+        message:
+            '${txn.type.label} ${formatMoney(txn.amount)}${txn.note.isNotEmpty ? ' – ${txn.note}' : ''}',
         confirm: 'Xoá',
         destructive: true,
       ),

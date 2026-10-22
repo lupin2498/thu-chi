@@ -33,7 +33,7 @@ object CaptureProcessor {
         if (dedupe) {
             val amountKey = "${r.amount}|${r.isIncome}"
             val textKey = "${packageName.orEmpty()}|${title.orEmpty()}|$text".hashCode().toString()
-            if (CaptureStore.checkAndRemember(ctx, amountKey, textKey, now)) {
+            if (CaptureStore.checkAndRemember(ctx, amountKey, textKey, packageName.orEmpty(), now)) {
                 Log.d(TAG, "Bỏ qua giao dịch trùng ${r.amount}")
                 return Outcome.Duplicate
             }

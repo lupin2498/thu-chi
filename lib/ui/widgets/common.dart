@@ -74,31 +74,39 @@ class MonthSwitcher extends StatelessWidget {
           icon: Icon(Icons.chevron_left, color: color),
           onPressed: () => onChanged(shift(-1)),
         ),
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: month,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-              helpText: yearMode ? 'Chọn năm' : 'Chọn tháng',
-              initialDatePickerMode: yearMode
-                  ? DatePickerMode.year
-                  : DatePickerMode.day,
-            );
-            if (picked != null) {
-              onChanged(yearMode ? DateTime(picked.year) : monthStart(picked));
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: color,
+        Flexible(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: month,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                helpText: yearMode ? 'Chọn năm' : 'Chọn tháng',
+                initialDatePickerMode: yearMode
+                    ? DatePickerMode.year
+                    : DatePickerMode.day,
+              );
+              if (picked != null) {
+                onChanged(
+                  yearMode ? DateTime(picked.year) : monthStart(picked),
+                );
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: color,
+                  ),
+                ),
               ),
             ),
           ),
@@ -144,9 +152,8 @@ class SectionCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title!,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     ?trailing,
@@ -183,7 +190,11 @@ class EmptyState extends StatelessWidget {
         children: [
           Icon(icon, size: 56, color: color),
           const SizedBox(height: 12),
-          Text(text, textAlign: TextAlign.center, style: TextStyle(color: color)),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: color),
+          ),
           if (action != null) ...[const SizedBox(height: 12), action!],
         ],
       ),

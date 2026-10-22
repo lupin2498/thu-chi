@@ -90,31 +90,34 @@ class _CategoryReportState extends State<_CategoryReport>
         return ListView(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: MonthSwitcher(
-                    month: _period,
-                    yearMode: _yearMode,
-                    onChanged: (m) => setState(() => _period = m),
-                  ),
-                ),
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: false, label: Text('Tháng')),
-                    ButtonSegment(value: true, label: Text('Năm')),
-                  ],
-                  selected: {_yearMode},
-                  showSelectedIcon: false,
-                  style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                  onSelectionChanged: (s) => setState(() {
-                    _yearMode = s.first;
-                    _period = _yearMode ? DateTime(_period.year) : monthStart(DateTime.now()).year == _period.year
-                        ? monthStart(DateTime.now())
+            Center(
+              child: MonthSwitcher(
+                month: _period,
+                yearMode: _yearMode,
+                onChanged: (m) => setState(() => _period = m),
+              ),
+            ),
+            Center(
+              child: SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Tháng')),
+                  ButtonSegment(value: true, label: Text('Năm')),
+                ],
+                selected: {_yearMode},
+                showSelectedIcon: false,
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                onSelectionChanged: (s) => setState(() {
+                  _yearMode = s.first;
+                  final now = DateTime.now();
+                  if (_yearMode) {
+                    _period = DateTime(_period.year);
+                  } else {
+                    _period = now.year == _period.year
+                        ? monthStart(now)
                         : DateTime(_period.year);
-                  }),
-                ),
-              ],
+                  }
+                }),
+              ),
             ),
             const SizedBox(height: 8),
             Card(
@@ -150,19 +153,27 @@ class _CategoryReportState extends State<_CategoryReport>
                             centerSpaceRadius: 50,
                             pieTouchData: PieTouchData(
                               touchCallback: (event, resp) {
-                                final idx = resp?.touchedSection?.touchedSectionIndex;
-                                if (!event.isInterestedForInteractions || idx == null || idx < 0) {
-                                  if (_touched != null) setState(() => _touched = null);
+                                final idx =
+                                    resp?.touchedSection?.touchedSectionIndex;
+                                if (!event.isInterestedForInteractions ||
+                                    idx == null ||
+                                    idx < 0) {
+                                  if (_touched != null)
+                                    setState(() => _touched = null);
                                   return;
                                 }
-                                if (idx != _touched) setState(() => _touched = idx);
+                                if (idx != _touched)
+                                  setState(() => _touched = idx);
                               },
                             ),
                             sections: [
                               for (final (i, t) in totals.indexed)
                                 PieChartSectionData(
                                   value: t.total.toDouble(),
-                                  color: Color(state.categoryById(t.categoryId)?.color ?? 0xFF9E9E9E),
+                                  color: Color(
+                                    state.categoryById(t.categoryId)?.color ??
+                                        0xFF9E9E9E,
+                                  ),
                                   radius: _touched == i ? 62 : 52,
                                   title: t.total * 100 / sum >= 6
                                       ? '${(t.total * 100 / sum).round()}%'
@@ -218,7 +229,11 @@ class _CategoryReportState extends State<_CategoryReport>
 }
 
 class _CategoryRow extends StatelessWidget {
-  const _CategoryRow({required this.total, required this.sum, required this.onTap});
+  const _CategoryRow({
+    required this.total,
+    required this.sum,
+    required this.onTap,
+  });
 
   final CategoryTotal total;
   final int sum;
@@ -232,7 +247,10 @@ class _CategoryRow extends StatelessWidget {
     final color = Color(cat?.color ?? 0xFF9E9E9E);
     return ListTile(
       onTap: onTap,
-      leading: IconBadge(icon: cat?.icon ?? 'other', color: cat?.color ?? 0xFF9E9E9E),
+      leading: IconBadge(
+        icon: cat?.icon ?? 'other',
+        color: cat?.color ?? 0xFF9E9E9E,
+      ),
       title: Row(
         children: [
           Expanded(
@@ -242,7 +260,10 @@ class _CategoryRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Text(formatMoney(total.total), style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            formatMoney(total.total),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
       subtitle: Padding(
@@ -330,52 +351,80 @@ class _YearReportState extends State<_YearReport>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _Legend(color: kIncomeColor, label: 'Thu ${formatCompact(income)}'),
+                        _Legend(
+                          color: kIncomeColor,
+                          label: 'Thu ${formatCompact(income)}',
+                        ),
                         const SizedBox(width: 16),
-                        _Legend(color: kExpenseColor, label: 'Chi ${formatCompact(expense)}'),
+                        _Legend(
+                          color: kExpenseColor,
+                          label: 'Chi ${formatCompact(expense)}',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 240,
                       child: maxY == 0
-                          ? const EmptyState(icon: Icons.bar_chart, text: 'Chưa có dữ liệu năm này')
+                          ? const EmptyState(
+                              icon: Icons.bar_chart,
+                              text: 'Chưa có dữ liệu năm này',
+                            )
                           : BarChart(
                               BarChartData(
                                 maxY: maxY * 1.15,
-                                gridData: const FlGridData(drawVerticalLine: false),
+                                gridData: const FlGridData(
+                                  drawVerticalLine: false,
+                                ),
                                 borderData: FlBorderData(show: false),
                                 barTouchData: BarTouchData(
                                   touchTooltipData: BarTouchTooltipData(
-                                    getTooltipItem: (group, gi, rod, ri) => BarTooltipItem(
-                                      '${ri == 0 ? 'Thu' : 'Chi'} T${group.x + 1}\n${formatMoney(rod.toY.round())}',
-                                      const TextStyle(color: Colors.white, fontSize: 12),
-                                    ),
+                                    getTooltipItem: (group, gi, rod, ri) =>
+                                        BarTooltipItem(
+                                          '${ri == 0 ? 'Thu' : 'Chi'} T${group.x + 1}\n${formatMoney(rod.toY.round())}',
+                                          const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                   ),
                                 ),
                                 titlesData: FlTitlesData(
-                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
                                   leftTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
                                       reservedSize: 44,
-                                      getTitlesWidget: (v, meta) => SideTitleWidget(
-                                        meta: meta,
-                                        child: Text(
-                                          formatCompact(v.round()),
-                                          style: const TextStyle(fontSize: 10),
-                                        ),
-                                      ),
+                                      getTitlesWidget: (v, meta) =>
+                                          SideTitleWidget(
+                                            meta: meta,
+                                            child: Text(
+                                              formatCompact(v.round()),
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
                                     ),
                                   ),
                                   bottomTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
-                                      getTitlesWidget: (v, meta) => SideTitleWidget(
-                                        meta: meta,
-                                        child: Text('${v.toInt() + 1}', style: const TextStyle(fontSize: 11)),
-                                      ),
+                                      getTitlesWidget: (v, meta) =>
+                                          SideTitleWidget(
+                                            meta: meta,
+                                            child: Text(
+                                              '${v.toInt() + 1}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -385,8 +434,16 @@ class _YearReportState extends State<_YearReport>
                                       x: i,
                                       barsSpace: 2,
                                       barRods: [
-                                        BarChartRodData(toY: m.income.toDouble(), color: kIncomeColor, width: 7),
-                                        BarChartRodData(toY: m.expense.toDouble(), color: kExpenseColor, width: 7),
+                                        BarChartRodData(
+                                          toY: m.income.toDouble(),
+                                          color: kIncomeColor,
+                                          width: 7,
+                                        ),
+                                        BarChartRodData(
+                                          toY: m.expense.toDouble(),
+                                          color: kExpenseColor,
+                                          width: 7,
+                                        ),
                                       ],
                                     ),
                                 ],
@@ -404,14 +461,23 @@ class _YearReportState extends State<_YearReport>
                 children: [
                   ListTile(
                     dense: true,
-                    title: const Text('Tháng', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text(
+                      'Tháng',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     trailing: SizedBox(
                       width: 200,
                       child: Row(
                         children: const [
-                          Expanded(child: Text('Thu', textAlign: TextAlign.end)),
-                          Expanded(child: Text('Chi', textAlign: TextAlign.end)),
-                          Expanded(child: Text('Còn lại', textAlign: TextAlign.end)),
+                          Expanded(
+                            child: Text('Thu', textAlign: TextAlign.end),
+                          ),
+                          Expanded(
+                            child: Text('Chi', textAlign: TextAlign.end),
+                          ),
+                          Expanded(
+                            child: Text('Còn lại', textAlign: TextAlign.end),
+                          ),
                         ],
                       ),
                     ),
@@ -425,9 +491,26 @@ class _YearReportState extends State<_YearReport>
                           width: 200,
                           child: Row(
                             children: [
-                              Expanded(child: Text(formatCompact(m.income), textAlign: TextAlign.end, style: const TextStyle(color: kIncomeColor))),
-                              Expanded(child: Text(formatCompact(m.expense), textAlign: TextAlign.end, style: const TextStyle(color: kExpenseColor))),
-                              Expanded(child: Text(formatCompact(m.income - m.expense), textAlign: TextAlign.end)),
+                              Expanded(
+                                child: Text(
+                                  formatCompact(m.income),
+                                  textAlign: TextAlign.end,
+                                  style: const TextStyle(color: kIncomeColor),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  formatCompact(m.expense),
+                                  textAlign: TextAlign.end,
+                                  style: const TextStyle(color: kExpenseColor),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  formatCompact(m.income - m.expense),
+                                  textAlign: TextAlign.end,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -453,7 +536,14 @@ class _Legend extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
         const SizedBox(width: 6),
         Text(label),
       ],

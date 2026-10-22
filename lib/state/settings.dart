@@ -20,7 +20,8 @@ class AppSettings {
 
   /// Hạn mức chi tiêu mỗi tháng (0 = không đặt).
   int get monthlyBudget => _prefs.getInt(_kBudget) ?? 0;
-  Future<void> setMonthlyBudget(int v) => _prefs.setInt(_kBudget, v < 0 ? 0 : v);
+  Future<void> setMonthlyBudget(int v) =>
+      _prefs.setInt(_kBudget, v < 0 ? 0 : v);
 
   bool get hideBalance => _prefs.getBool(_kHideBalance) ?? false;
   Future<void> setHideBalance(bool v) => _prefs.setBool(_kHideBalance, v);

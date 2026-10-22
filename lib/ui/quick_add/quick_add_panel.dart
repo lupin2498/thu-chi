@@ -246,6 +246,7 @@ class _QuickAddPanelState extends State<QuickAddPanel> {
       if (c != null) await state.dismissCapture(c.id);
       HapticFeedback.lightImpact();
       widget.onDone(QuickAddOutcome.saved);
+      if (mounted) setState(() => _saving = false);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -443,7 +444,9 @@ class _QuickAddPanelState extends State<QuickAddPanel> {
           onSubmitted: (_) => _save(),
           decoration: InputDecoration(
             labelText: 'Nội dung',
-            hintText: listening ? 'Đang nghe…' : 'Nói hoặc gõ tên khoản (vd: Ăn trưa)',
+            hintText: listening
+                ? 'Đang nghe…'
+                : 'Nói hoặc gõ tên khoản (vd: Ăn trưa)',
             suffixIcon: _MicButton(
               listening: listening,
               level: _voice.level,
@@ -511,7 +514,11 @@ class _QuickAddPanelState extends State<QuickAddPanel> {
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: ChoiceChip(
-                    avatar: Icon(appIcon(cat.icon), size: 18, color: Color(cat.color)),
+                    avatar: Icon(
+                      appIcon(cat.icon),
+                      size: 18,
+                      color: Color(cat.color),
+                    ),
                     label: Text(cat.name),
                     selected: cat.id == _categoryId,
                     onSelected: (_) {
@@ -669,4 +676,6 @@ Future<QuickAddOutcome?> showQuickAddSheet(
 
 /// Tên ngân hàng hiển thị cho mã gói (dùng ở danh sách chờ).
 String bankLabel(CaptureData c) =>
-    bankByKey(c.bankKey)?.name ?? bankByPackage(c.packageName)?.name ?? 'Ngân hàng';
+    bankByKey(c.bankKey)?.name ??
+    bankByPackage(c.packageName)?.name ??
+    'Ngân hàng';

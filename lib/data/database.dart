@@ -26,6 +26,8 @@ class AppDatabase {
       dbPath,
       options: OpenDatabaseOptions(
         version: schemaVersion,
+        // CSDL trong bộ nhớ (kiểm thử) phải tách biệt từng lần mở.
+        singleInstance: dbPath != inMemoryDatabasePath,
         onConfigure: (db) async {
           await db.execute('PRAGMA foreign_keys = ON');
           // WAL cho phép popup và app chính cùng đọc/ghi an toàn.
@@ -82,7 +84,9 @@ class AppDatabase {
         bank_key TEXT
       )''');
     await db.execute('CREATE INDEX idx_txn_date ON transactions(date)');
-    await db.execute('CREATE INDEX idx_txn_account ON transactions(account_id)');
+    await db.execute(
+      'CREATE INDEX idx_txn_account ON transactions(account_id)',
+    );
     await db.execute(
       'CREATE INDEX idx_txn_category ON transactions(category_id)',
     );
@@ -94,7 +98,10 @@ class AppDatabase {
       await db.insert('accounts', a.copyWith(sortOrder: order++).toMap());
     }
     order = 0;
-    for (final c in [...kDefaultExpenseCategories, ...kDefaultIncomeCategories]) {
+    for (final c in [
+      ...kDefaultExpenseCategories,
+      ...kDefaultIncomeCategories,
+    ]) {
       await db.insert('categories', c.copyWith(sortOrder: order++).toMap());
     }
   }

@@ -26,7 +26,10 @@ class MoreScreen extends StatelessWidget {
         Navigator.push(context, MaterialPageRoute(builder: (_) => w));
 
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false, title: const Text('Khác')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Khác'),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
         children: [
@@ -49,7 +52,9 @@ class MoreScreen extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.account_balance_wallet),
                   title: const Text('Tài khoản'),
-                  subtitle: Text('${state.accounts.length} tài khoản · ${formatMoney(state.totalBalance)}'),
+                  subtitle: Text(
+                    '${state.accounts.length} tài khoản · ${formatMoney(state.totalBalance)}',
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => push(const AccountsScreen()),
                 ),
@@ -107,14 +112,18 @@ class MoreScreen extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.backup),
                   title: const Text('Sao lưu dữ liệu'),
-                  subtitle: const Text('Tạo tệp .json để lưu Drive, Zalo, email…'),
+                  subtitle: const Text(
+                    'Tạo tệp .json để lưu Drive, Zalo, email…',
+                  ),
                   onTap: () => _backup(context, state),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.restore),
                   title: const Text('Khôi phục dữ liệu'),
-                  subtitle: const Text('Từ tệp sao lưu (ghi đè dữ liệu hiện tại)'),
+                  subtitle: const Text(
+                    'Từ tệp sao lưu (ghi đè dữ liệu hiện tại)',
+                  ),
                   onTap: () => _restore(context, state),
                 ),
               ],
@@ -125,7 +134,9 @@ class MoreScreen extends StatelessWidget {
             child: ListTile(
               leading: Icon(Icons.info_outline),
               title: Text('Sổ Thu Chi 1.0.0'),
-              subtitle: Text('Dữ liệu lưu trên máy của bạn. Không quảng cáo, không gửi dữ liệu ra ngoài.'),
+              subtitle: Text(
+                'Dữ liệu lưu trên máy của bạn. Không quảng cáo, không gửi dữ liệu ra ngoài.',
+              ),
             ),
           ),
         ],
@@ -148,10 +159,16 @@ class MoreScreen extends StatelessWidget {
           autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [MoneyInputFormatter()],
-          decoration: const InputDecoration(suffixText: 'đ', hintText: '0 = không đặt'),
+          decoration: const InputDecoration(
+            suffixText: 'đ',
+            hintText: '0 = không đặt',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Huỷ'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, parseMoneyInput(ctrl.text)),
             child: const Text('Lưu'),
@@ -181,7 +198,10 @@ class MoreScreen extends StatelessWidget {
       final csv = await state.repo.exportCsv();
       final f = await _writeTemp('so_thu_chi_${_stamp()}.csv', csv);
       await SharePlus.instance.share(
-        ShareParams(files: [XFile(f.path, mimeType: 'text/csv')], subject: 'Sổ thu chi'),
+        ShareParams(
+          files: [XFile(f.path, mimeType: 'text/csv')],
+          subject: 'Sổ thu chi',
+        ),
       );
     } catch (e) {
       if (context.mounted) showSnack(context, 'Không xuất được: $e');

@@ -28,7 +28,8 @@ class FinanceRepository {
   }
 
   Future<int> insertAccount(Account a) async {
-    final maxOrder = Sqflite.firstIntValue(
+    final maxOrder =
+        Sqflite.firstIntValue(
           await db.rawQuery('SELECT MAX(sort_order) FROM accounts'),
         ) ??
         0;
@@ -42,7 +43,8 @@ class FinanceRepository {
 
   /// Xoá tài khoản; nếu đã có giao dịch thì chỉ ẩn đi. Trả về true nếu đã xoá hẳn.
   Future<bool> deleteAccount(int id) async {
-    final used = Sqflite.firstIntValue(
+    final used =
+        Sqflite.firstIntValue(
           await db.rawQuery(
             'SELECT COUNT(*) FROM transactions WHERE account_id = ? OR to_account_id = ?',
             [id, id],
@@ -103,7 +105,8 @@ class FinanceRepository {
   }
 
   Future<int> insertCategory(Category c) async {
-    final maxOrder = Sqflite.firstIntValue(
+    final maxOrder =
+        Sqflite.firstIntValue(
           await db.rawQuery('SELECT MAX(sort_order) FROM categories'),
         ) ??
         0;
@@ -122,7 +125,8 @@ class FinanceRepository {
 
   /// Xoá hạng mục; nếu đã dùng thì ẩn đi để giữ lịch sử. Trả true nếu xoá hẳn.
   Future<bool> deleteCategory(int id) async {
-    final used = Sqflite.firstIntValue(
+    final used =
+        Sqflite.firstIntValue(
           await db.rawQuery(
             'SELECT COUNT(*) FROM transactions WHERE category_id = ?',
             [id],
@@ -258,16 +262,13 @@ class FinanceRepository {
       accountFilter = ' AND account_id = ?';
       args.add(accountId);
     }
-    final rows = await db.rawQuery(
-      '''
+    final rows = await db.rawQuery('''
       SELECT
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount END), 0) AS income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount END), 0) AS expense
       FROM transactions
       WHERE date >= ? AND date < ?$accountFilter
-    ''',
-      args,
-    );
+    ''', args);
     final r = rows.first;
     return PeriodSummary(
       income: (r['income'] as num?)?.toInt() ?? 0,
@@ -420,7 +421,9 @@ class FinanceRepository {
 
   /// Xuất CSV (mở được bằng Excel nhờ BOM UTF-8).
   Future<String> exportCsv({DateTime? start, DateTime? end}) async {
-    final accounts = {for (final a in await this.accounts(includeArchived: true)) a.id: a};
+    final accounts = {
+      for (final a in await this.accounts(includeArchived: true)) a.id: a,
+    };
     final cats = {
       for (final c in await categories(includeArchived: true)) c.id: c,
     };

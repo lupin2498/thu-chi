@@ -49,9 +49,7 @@ class VoiceInput extends ChangeNotifier {
         final perm = await _stt.hasPermission;
         _set(
           perm ? VoiceState.unavailable : VoiceState.denied,
-          perm
-              ? 'Thiết bị chưa hỗ trợ nhận dạng giọng nói. Hãy gõ nội dung.'
-              : 'Chưa cấp quyền micro. Hãy gõ nội dung hoặc cấp quyền trong Cài đặt.',
+          perm ? 'Thiết bị chưa hỗ trợ nhận dạng giọng nói. Hãy gõ nội dung.' : 'Chưa cấp quyền micro. Hãy gõ nội dung hoặc cấp quyền trong Cài đặt.',
         );
         return false;
       }
@@ -154,7 +152,10 @@ class VoiceInput extends ChangeNotifier {
     _onResult?.call(text, r.finalResult);
     if (r.finalResult) {
       _watchdog?.cancel();
-      _set(VoiceState.idle, text.isEmpty ? 'Không nghe rõ, chạm mic để nói lại' : '');
+      _set(
+        VoiceState.idle,
+        text.isEmpty ? 'Không nghe rõ, chạm mic để nói lại' : '',
+      );
     }
   }
 
@@ -169,16 +170,16 @@ class VoiceInput extends ChangeNotifier {
   void _handleError(SpeechRecognitionError e) {
     _watchdog?.cancel();
     final msg = switch (e.errorMsg) {
-      'error_no_match' || 'error_speech_timeout' =>
-        'Không nghe rõ, chạm mic để nói lại',
+      'error_no_match' ||
+      'error_speech_timeout' => 'Không nghe rõ, chạm mic để nói lại',
       'error_permission' ||
       'error_insufficient_permissions' => 'Chưa cấp quyền micro',
       'error_network' ||
       'error_network_timeout' ||
       'error_server' => 'Lỗi mạng khi nhận dạng giọng nói, hãy gõ nội dung',
       'error_busy' => 'Micro đang bận, thử lại sau giây lát',
-      'error_language_not_supported' ||
-      'error_language_unavailable' => 'Máy chưa có gói tiếng Việt cho nhận dạng giọng nói',
+      'error_language_not_supported' || 'error_language_unavailable' =>
+        'Máy chưa có gói tiếng Việt cho nhận dạng giọng nói',
       _ => 'Không nhận dạng được (${e.errorMsg})',
     };
     _set(VoiceState.idle, msg);

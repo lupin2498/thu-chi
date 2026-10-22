@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -85,7 +85,7 @@ jobs:
 
       - name: Kiểm thử Kotlin (parser thông báo)
         working-directory: android
-        run: ./gradlew :app:testReleaseUnitTest --stacktrace
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
 
       - name: Đổi tên APK
         run: |
@@ -94,7 +94,7 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk "dist/SoThuChi-${VERSION}.apk"
           ls -la dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: android-apk
           path: dist/*.apk
@@ -105,7 +105,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
@@ -127,7 +127,7 @@ jobs:
           (cd build/ipa && zip -qry "../../dist/SoThuChi-${VERSION}-unsigned.ipa" Payload)
           ls -la dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ios-ipa
           path: dist/*.ipa
@@ -139,9 +139,9 @@ jobs:
     if: ${{ always() && needs.android.result == 'success' && github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: dist
           merge-multiple: true

@@ -140,7 +140,9 @@ SpokenAmount? parseSpokenAmount(String input) {
         continue;
       }
       // Số lẻ sau đơn vị lớn: "1 triệu 2" = 1.200.000, "1tr5" = 1.500.000.
-      if (matchedUnit && lastUnit >= 1000 && RegExp(r'^\d{1,3}$').hasMatch(numTok)) {
+      if (matchedUnit &&
+          lastUnit >= 1000 &&
+          RegExp(r'^\d{1,3}$').hasMatch(numTok)) {
         final digits = numTok.length;
         var frac = 1;
         for (var k = 0; k < digits; k++) {

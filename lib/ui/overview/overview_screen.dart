@@ -137,7 +137,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
                                     TxnTile(
                                       txn: t,
                                       showDate: true,
-                                      onTap: () => openEditor(context, existing: t),
+                                      onTap: () =>
+                                          openEditor(context, existing: t),
                                     ),
                                 ],
                               ),
@@ -278,7 +279,14 @@ class _HeaderStat extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: Colors.white70),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 2),
@@ -490,7 +498,11 @@ class _BudgetCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: Text('Đã chi ${formatMoney(spent)} / ${formatMoney(budget)}')),
+              Expanded(
+                child: Text(
+                  'Đã chi ${formatMoney(spent)} / ${formatMoney(budget)}',
+                ),
+              ),
               Text('${(ratio * 100).round()}%', style: TextStyle(color: color)),
             ],
           ),
@@ -618,7 +630,10 @@ Future<void> pasteBankText(BuildContext context) async {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Huỷ'),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, controller.text),
           child: const Text('Phân tích'),

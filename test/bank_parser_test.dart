@@ -7,12 +7,9 @@ import 'package:so_thu_chi/capture/bank_parser.dart';
 import 'package:so_thu_chi/data/models.dart';
 
 void main() {
-  final fixtures =
-      (jsonDecode(
-                File('test/fixtures/bank_notifications.json').readAsStringSync(),
-              )
-              as List)
-          .cast<Map<String, dynamic>>();
+  final fixtures = (jsonDecode(
+    File('test/fixtures/bank_notifications.json').readAsStringSync(),
+  ) as List).cast<Map<String, dynamic>>();
 
   group('Mẫu thông báo ngân hàng', () {
     for (final f in fixtures) {

@@ -80,9 +80,10 @@ object CapturePresenter {
         val dp = { v: Float -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, ctx.resources.displayMetrics).toInt() }
         val income = capture.optBoolean("income")
         val amount = capture.optLong("amount")
-        val bank = BankApps.byKey(capture.optString("bankKey"))?.name
-            ?: BankApps.byPackage(capture.optString("packageName"))?.name
-            ?: "Ngân hàng"
+        val bank = with(CaptureStore) {
+            BankApps.byKey(capture.str("bankKey"))?.name
+                ?: BankApps.byPackage(capture.str("packageName"))?.name
+        } ?: "Ngân hàng"
 
         val layout = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -177,7 +178,7 @@ object CapturePresenter {
             val id = capture.optString("id")
             val income = capture.optBoolean("income")
             val amount = capture.optLong("amount")
-            val bank = BankApps.byKey(capture.optString("bankKey"))?.name ?: "Ngân hàng"
+            val bank = with(CaptureStore) { BankApps.byKey(capture.str("bankKey"))?.name } ?: "Ngân hàng"
             val pi = PendingIntent.getActivity(
                 ctx,
                 notificationId(id),
@@ -193,7 +194,7 @@ object CapturePresenter {
                     if (headsUp) Notification.PRIORITY_HIGH else Notification.PRIORITY_LOW
                 )
             }
-            val content = capture.optString("content").takeIf { it.isNotEmpty() && it != "null" }
+            val content = with(CaptureStore) { capture.str("content") }
             builder
                 .setSmallIcon(R.drawable.ic_stat_capture)
                 .setContentTitle((if (income) "Thu +" else "Chi -") + formatMoney(amount) + " · " + bank)

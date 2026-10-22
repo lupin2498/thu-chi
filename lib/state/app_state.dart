@@ -72,7 +72,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> refreshPending() async {
-    final list = await CaptureChannel.pending();
+    final list = [...await CaptureChannel.pending()];
     list.sort((a, b) => b.time.compareTo(a.time));
     pending = list;
     notifyListeners();

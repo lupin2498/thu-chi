@@ -158,7 +158,9 @@ class _TransactionEditorState extends State<TransactionEditor> {
         final list = state.categoriesOf(kind);
         categoryId = list.isEmpty
             ? null
-            : list.firstWhere((c) => c.icon == 'other', orElse: () => list.last).id;
+            : list
+                  .firstWhere((c) => c.icon == 'other', orElse: () => list.last)
+                  .id;
       }
     } else {
       categoryId = null;
@@ -236,7 +238,10 @@ class _TransactionEditorState extends State<TransactionEditor> {
             segments: const [
               ButtonSegment(value: TxnType.expense, label: Text('Chi tiền')),
               ButtonSegment(value: TxnType.income, label: Text('Thu tiền')),
-              ButtonSegment(value: TxnType.transfer, label: Text('Chuyển khoản')),
+              ButtonSegment(
+                value: TxnType.transfer,
+                label: Text('Chuyển khoản'),
+              ),
             ],
             selected: {_type},
             showSelectedIcon: false,
@@ -319,7 +324,10 @@ class _TransactionEditorState extends State<TransactionEditor> {
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
-                    final a = await pickAccount(context, selectedId: _accountId);
+                    final a = await pickAccount(
+                      context,
+                      selectedId: _accountId,
+                    );
                     if (a != null) setState(() => _accountId = a.id);
                   },
                 ),

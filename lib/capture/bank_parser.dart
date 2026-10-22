@@ -188,9 +188,7 @@ class BankNotificationParser {
       final value = _parseNumber(numText);
       if (value == null || value <= 0) continue;
       final signText = m.group(1)?.trim();
-      final sign = signText == null
-          ? 0
-          : (signText == '+' ? 1 : -1);
+      final sign = signText == null ? 0 : (signText == '+' ? 1 : -1);
       final cur1 = m.group(2);
       final cur2 = m.group(4)?.trim();
       final hasGrouping = RegExp(r'\d[.,]\d{3}').hasMatch(numText);
@@ -239,8 +237,8 @@ class BankNotificationParser {
     final bestPrefix = _segmentPrefix(folded, best.start);
     final hasStrongLabel = _txnLabel.hasMatch(bestPrefix);
     final labeled = hasStrongLabel || _verbLabel.hasMatch(bestPrefix);
-    final hasBalance = candidates.any((c) => c.isBalance) ||
-        folded.contains('so du');
+    final hasBalance =
+        candidates.any((c) => c.isBalance) || folded.contains('so du');
     final hasTxnKeyword = _txnKeywords.any(folded.contains);
     if (best.sign == 0 && !labeled) {
       // Chỉ có một con số kèm "số dư" -> thông báo số dư, không phải giao dịch.
@@ -252,7 +250,8 @@ class BankNotificationParser {
 
     if (strict) {
       final clear = best.sign != 0 || hasStrongLabel;
-      final bankish = hasBalance ||
+      final bankish =
+          hasBalance ||
           _detectBankKey(folded) != null ||
           bankByPackage(packageName) != null;
       if (!clear || !bankish) return null;
@@ -337,7 +336,9 @@ class BankNotificationParser {
     content = content.replaceAll(RegExp(r'\s+'), ' ');
     // Bỏ mã tham chiếu đầu nội dung: "MBVCB.1234567.", "FT2629512345 ", "IBFT "...
     content = content.replaceFirst(
-      RegExp(r'^(?:[A-Z]{2,10}\.\d{3,}\.|FT\d{6,}\s|IBFT\s|TKThe\s:\S+\s*,?\s*)'),
+      RegExp(
+        r'^(?:[A-Z]{2,10}\.\d{3,}\.|FT\d{6,}\s|IBFT\s|TKThe\s:\S+\s*,?\s*)',
+      ),
       '',
     );
     content = content.replaceAll(RegExp(r'^[\s:.\-]+|[\s.;,\-]+$'), '');
@@ -350,7 +351,8 @@ class BankNotificationParser {
     for (final b in kBankApps) {
       for (final alias in b.aliases) {
         final a = alias.trim();
-        if (RegExp('(^|[^a-z])${RegExp.escape(a)}(\$|[^a-z])').hasMatch(folded)) {
+        if (RegExp('(^|[^a-z])${RegExp.escape(a)}(\$|[^a-z])')
+            .hasMatch(folded)) {
           return b.key;
         }
       }
@@ -367,7 +369,8 @@ class BankNotificationParser {
     } else if (RegExp(r'^\d+[.,]\d{1,2}$').hasMatch(t)) {
       intPart = t.split(RegExp(r'[.,]')).first;
     } else {
-      final m = RegExp(r'^(\d{1,3}(?:[.,]\d{3})+)(?:[.,]\d{1,2})?$').firstMatch(t);
+      final m = RegExp(r'^(\d{1,3}(?:[.,]\d{3})+)(?:[.,]\d{1,2})?$')
+          .firstMatch(t);
       if (m == null) return null;
       intPart = m.group(1)!;
     }

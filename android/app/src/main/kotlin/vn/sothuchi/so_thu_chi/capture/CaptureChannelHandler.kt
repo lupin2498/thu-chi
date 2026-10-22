@@ -195,10 +195,10 @@ class CaptureChannelHandler(
 
     private fun startSafely(intent: Intent): Boolean {
         return try {
-            if (intent.resolveActivity(ctx.packageManager) == null && intent.component == null) return false
             activity.startActivity(intent)
             true
         } catch (e: Exception) {
+            // ActivityNotFoundException / SecurityException (trang riêng của hãng không tồn tại)
             false
         }
     }

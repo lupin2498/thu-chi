@@ -88,7 +88,10 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
     if (res == 'ignored') {
       showSnack(context, 'Nội dung không được nhận là giao dịch');
     } else if (res == 'duplicate') {
-      showSnack(context, 'Giao dịch trùng vừa ghi nhận, sửa số tiền để thử lại');
+      showSnack(
+        context,
+        'Giao dịch trùng vừa ghi nhận, sửa số tiền để thử lại',
+      );
     } else if (res == 'disabled') {
       showSnack(context, 'Tự động ghi chép đang tắt');
     } else {
@@ -163,7 +166,8 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                         ),
                         trailing: const Icon(Icons.open_in_new),
                         onTap: () async {
-                          final ok = await CaptureChannel.openBackgroundPopupSettings();
+                          final ok =
+                              await CaptureChannel.openBackgroundPopupSettings();
                           if (!ok) await CaptureChannel.openAppSettings();
                         },
                       ),
@@ -179,11 +183,14 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                       SwitchListTile(
                         title: const Text('Bật tự động ghi chép'),
                         value: _settings.enabled,
-                        onChanged: (v) => _update(_settings.copyWith(enabled: v)),
+                        onChanged: (v) =>
+                            _update(_settings.copyWith(enabled: v)),
                       ),
                       SwitchListTile(
                         title: const Text('Bật cửa sổ ghi nhanh ngay'),
-                        subtitle: const Text('Tắt: chỉ hiện thông báo nhắc, chạm để ghi'),
+                        subtitle: const Text(
+                          'Tắt: chỉ hiện thông báo nhắc, chạm để ghi',
+                        ),
                         value: _settings.showPopup,
                         onChanged: _settings.enabled
                             ? (v) => _update(_settings.copyWith(showPopup: v))
@@ -191,7 +198,9 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                       ),
                       SwitchListTile(
                         title: const Text('Đọc SMS biến động số dư'),
-                        subtitle: const Text('Từ ứng dụng Tin nhắn (SMS Banking)'),
+                        subtitle: const Text(
+                          'Từ ứng dụng Tin nhắn (SMS Banking)',
+                        ),
                         value: _settings.readSms,
                         onChanged: _settings.enabled
                             ? (v) => _update(_settings.copyWith(readSms: v))
@@ -199,7 +208,9 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                       ),
                       SwitchListTile(
                         title: const Text('Mọi ứng dụng (nâng cao)'),
-                        subtitle: const Text('Nhận cả ngân hàng chưa có trong danh sách, chỉ khi thông báo có dấu hiệu giao dịch rõ ràng'),
+                        subtitle: const Text(
+                          'Nhận cả ngân hàng chưa có trong danh sách, chỉ khi thông báo có dấu hiệu giao dịch rõ ràng',
+                        ),
                         value: _settings.anyApp,
                         onChanged: _settings.enabled
                             ? (v) => _update(_settings.copyWith(anyApp: v))
@@ -215,7 +226,9 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                       Consumer<AppState>(
                         builder: (context, state, _) => SwitchListTile(
                           title: const Text('Tự lưu sau khi nói xong'),
-                          subtitle: const Text('Đếm ngược 3 giây, chạm bất kỳ đâu để huỷ'),
+                          subtitle: const Text(
+                            'Đếm ngược 3 giây, chạm bất kỳ đâu để huỷ',
+                          ),
                           value: state.settings.autoSaveAfterVoice,
                           onChanged: state.setAutoSaveAfterVoice,
                         ),
@@ -234,7 +247,10 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                           dense: true,
                           title: Text(b.name),
                           subtitle: _installed.any(b.packages.contains)
-                              ? const Text('Đã cài trên máy', style: TextStyle(color: kIncomeColor))
+                              ? const Text(
+                                  'Đã cài trên máy',
+                                  style: TextStyle(color: kIncomeColor),
+                                )
                               : null,
                           value: !_settings.disabledBanks.contains(b.key),
                           onChanged: _settings.enabled
@@ -245,7 +261,9 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                                   } else {
                                     set.add(b.key);
                                   }
-                                  _update(_settings.copyWith(disabledBanks: set));
+                                  _update(
+                                    _settings.copyWith(disabledBanks: set),
+                                  );
                                 }
                               : null,
                         ),
@@ -345,7 +363,10 @@ class IosCaptureGuide extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(radius: 12, child: Text(n, style: const TextStyle(fontSize: 12))),
+          CircleAvatar(
+            radius: 12,
+            child: Text(n, style: const TextStyle(fontSize: 12)),
+          ),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: style)),
         ],
@@ -365,11 +386,26 @@ class IosCaptureGuide extends StatelessWidget {
             title: 'Cài đặt một lần',
             child: Column(
               children: [
-                step('1', 'Mở app Phím tắt → tab Tự động hoá → Tạo mục tự động hoá cá nhân.'),
-                step('2', 'Chọn "Tin nhắn" → Người gửi: MBBank (hoặc tên ngân hàng của bạn) → chọn "Chạy ngay lập tức".'),
-                step('3', 'Thêm tác vụ "Mã hoá URL" với đầu vào là "Nội dung tin nhắn".'),
-                step('4', 'Thêm tác vụ "Mở URL": sothuchi://app/add?text=[URL đã mã hoá].'),
-                step('5', 'Xong! Mỗi lần có SMS ngân hàng, Sổ Thu Chi mở ra với số tiền sẵn và micro chờ bạn nói nội dung.'),
+                step(
+                  '1',
+                  'Mở app Phím tắt → tab Tự động hoá → Tạo mục tự động hoá cá nhân.',
+                ),
+                step(
+                  '2',
+                  'Chọn "Tin nhắn" → Người gửi: MBBank (hoặc tên ngân hàng của bạn) → chọn "Chạy ngay lập tức".',
+                ),
+                step(
+                  '3',
+                  'Thêm tác vụ "Mã hoá URL" với đầu vào là "Nội dung tin nhắn".',
+                ),
+                step(
+                  '4',
+                  'Thêm tác vụ "Mở URL": sothuchi://app/add?text=[URL đã mã hoá].',
+                ),
+                step(
+                  '5',
+                  'Xong! Mỗi lần có SMS ngân hàng, Sổ Thu Chi mở ra với số tiền sẵn và micro chờ bạn nói nội dung.',
+                ),
               ],
             ),
           ),

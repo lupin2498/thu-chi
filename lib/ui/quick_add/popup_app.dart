@@ -66,7 +66,7 @@ class _PopupHostState extends State<PopupHost> {
     var first = widget.initial;
     if (first == null) {
       // Mở từ thông báo nhắc: lấy giao dịch chờ mới nhất.
-      final pending = await CaptureChannel.pending();
+      final pending = [...await CaptureChannel.pending()];
       if (pending.isNotEmpty) {
         pending.sort((a, b) => b.time.compareTo(a.time));
         first = pending.first;
@@ -129,7 +129,10 @@ class _PopupHostState extends State<PopupHost> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _onDone(current != null ? QuickAddOutcome.later : QuickAddOutcome.cancelled);
+        if (!didPop)
+          _onDone(
+            current != null ? QuickAddOutcome.later : QuickAddOutcome.cancelled,
+          );
       },
       child: Scaffold(
         backgroundColor: Colors.black.withValues(alpha: 0.35),
@@ -165,7 +168,9 @@ class _PopupHostState extends State<PopupHost> {
                                         if (_queue.isNotEmpty)
                                           'Còn ${_queue.length} giao dịch nữa',
                                       ].join(' · '),
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
                                     ),
                                   ),
                                 QuickAddPanel(

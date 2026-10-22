@@ -22,7 +22,10 @@ class CategoriesScreen extends StatelessWidget {
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               indicatorColor: Colors.white,
-              tabs: [Tab(text: 'Mục chi'), Tab(text: 'Mục thu')],
+              tabs: [
+                Tab(text: 'Mục chi'),
+                Tab(text: 'Mục thu'),
+              ],
             ),
           ),
           floatingActionButton: FloatingActionButton(
@@ -141,7 +144,8 @@ class _CategoryEditorState extends State<CategoryEditor> {
     final ok = await confirmDialog(
       context,
       title: 'Xoá hạng mục "${c!.name}"?',
-      message: 'Nếu hạng mục đã được dùng, nó sẽ được ẩn để giữ lịch sử giao dịch.',
+      message:
+          'Nếu hạng mục đã được dùng, nó sẽ được ẩn để giữ lịch sử giao dịch.',
       confirm: 'Xoá',
       destructive: true,
     );
@@ -179,7 +183,9 @@ class _CategoryEditorState extends State<CategoryEditor> {
                   autofocus: widget.category == null,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
-                    labelText: widget.kind == CategoryKind.expense ? 'Tên mục chi' : 'Tên mục thu',
+                    labelText: widget.kind == CategoryKind.expense
+                        ? 'Tên mục chi'
+                        : 'Tên mục thu',
                   ),
                 ),
               ),
@@ -201,7 +207,9 @@ class _CategoryEditorState extends State<CategoryEditor> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: e.key == _icon ? Color(_color) : Colors.transparent,
+                        color: e.key == _icon
+                            ? Color(_color)
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -213,10 +221,15 @@ class _CategoryEditorState extends State<CategoryEditor> {
           const SizedBox(height: 16),
           const Text('Màu'),
           const SizedBox(height: 8),
-          ColorPickerRow(value: _color, onChanged: (c) => setState(() => _color = c)),
+          ColorPickerRow(
+            value: _color,
+            onChanged: (c) => setState(() => _color = c),
+          ),
           const SizedBox(height: 24),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+            ),
             onPressed: _save,
             child: const Text('Lưu'),
           ),

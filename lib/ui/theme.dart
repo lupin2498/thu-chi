@@ -28,8 +28,12 @@ ThemeData buildTheme(Brightness brightness) {
         ? const Color(0xFFF3F6FA)
         : scheme.surface,
     appBarTheme: AppBarTheme(
-      backgroundColor: brightness == Brightness.light ? kPrimary : scheme.surface,
-      foregroundColor: brightness == Brightness.light ? Colors.white : scheme.onSurface,
+      backgroundColor: brightness == Brightness.light
+          ? kPrimary
+          : scheme.surface,
+      foregroundColor: brightness == Brightness.light
+          ? Colors.white
+          : scheme.onSurface,
       centerTitle: true,
       elevation: 0,
     ),

@@ -21,8 +21,10 @@ enum CategoryKind {
   final String key;
   final String label;
 
-  static CategoryKind fromKey(String? key) =>
-      CategoryKind.values.firstWhere((t) => t.key == key, orElse: () => expense);
+  static CategoryKind fromKey(String? key) => CategoryKind.values.firstWhere(
+    (t) => t.key == key,
+    orElse: () => expense,
+  );
 
   static CategoryKind forTxn(TxnType t) =>
       t == TxnType.income ? CategoryKind.income : CategoryKind.expense;

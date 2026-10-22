@@ -34,7 +34,9 @@ class CaptureData {
   final DateTime time;
 
   String get bankName =>
-      bankByKey(bankKey)?.name ?? bankByPackage(packageName)?.name ?? 'Ngân hàng';
+      bankByKey(bankKey)?.name ??
+      bankByPackage(packageName)?.name ??
+      'Ngân hàng';
 
   factory CaptureData.fromMap(Map<Object?, Object?> m) {
     final time = (m['time'] as num?)?.toInt();
@@ -204,13 +206,16 @@ class CaptureChannel {
 
   static Future<CapturePermissions> permissions() async {
     final m = await _invoke<Map<Object?, Object?>>('getPermissions');
-    return m == null ? const CapturePermissions() : CapturePermissions.fromMap(m);
+    return m == null
+        ? const CapturePermissions()
+        : CapturePermissions.fromMap(m);
   }
 
   static Future<void> openNotificationListenerSettings() =>
       _invoke<void>('openNotificationListenerSettings');
 
-  static Future<void> openOverlaySettings() => _invoke<void>('openOverlaySettings');
+  static Future<void> openOverlaySettings() =>
+      _invoke<void>('openOverlaySettings');
 
   static Future<void> openAppSettings() => _invoke<void>('openAppSettings');
 
