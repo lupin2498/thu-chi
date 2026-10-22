@@ -91,6 +91,39 @@ String _wordsToDigits(String folded) {
   return out.join(' ');
 }
 
+/// Từ đứng trước số không phải tiền: "tháng 10", "ngày 5", "lần 2", "phòng 301"...
+const Set<String> _counterWords = {
+  'thang',
+  'ngay',
+  'nam',
+  'lan',
+  'so',
+  'phong',
+  'tang',
+  'lop',
+  'ban',
+  'ky',
+  'tuan',
+  'gio',
+  'phut',
+  'quy',
+  'dot',
+  'cai',
+  'chiec',
+  'ly',
+  'coc',
+  'hop',
+  'goi',
+  'kg',
+  'nguoi',
+  'xuat',
+  'suat',
+  'phan',
+  'cau',
+  'bai',
+  'chuong',
+};
+
 const Set<String> _fillers = {'het', 'mat', 'la', 'tien', 'gia', 'khoang'};
 
 /// Tách số tiền trong câu nói tiếng Việt.
@@ -168,10 +201,14 @@ SpokenAmount? parseSpokenAmount(String input) {
     final num = _parseNumberToken(tokens[i]);
     if (num == null) continue;
     final grouped = RegExp(r'\d[.,]\d{3}').hasMatch(tokens[i]);
+    final afterCounter = i > 0 && _counterWords.contains(tokens[i - 1]);
     int? value;
-    if (grouped || num >= 1000) {
+    if (grouped || (num >= 1000 && !afterCounter)) {
       value = num.round();
-    } else if (i == tokens.length - 1 && num >= 1 && num < 1000) {
+    } else if (i == tokens.length - 1 &&
+        num >= 1 &&
+        num < 1000 &&
+        !afterCounter) {
       value = (num * 1000).round();
     }
     if (value != null && value > 0 && bestStart == null) {

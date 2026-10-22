@@ -38,6 +38,21 @@ void main() {
       });
     });
 
+    test('số không phải tiền ở cuối câu', () {
+      expect(parseSpokenAmount('tiền điện tháng 10'), isNull);
+      expect(parseSpokenAmount('học phí lớp 5'), isNull);
+      expect(parseSpokenAmount('trà sữa 2 ly'), isNull);
+      expect(parseSpokenAmount('tiền điện tháng 10 500 nghìn')!.amount, 500000);
+      expect(
+        parseSpokenAmount('tiền điện tháng 10 500 nghìn')!.rest,
+        'Tiền điện tháng 10',
+      );
+      expect(parseSpokenAmount('bánh mì 25')!.amount, 25000);
+      expect(parseSpokenAmount('học phí năm 2026'), isNull);
+      expect(parseSpokenAmount('học phí năm 2026 5 triệu')!.amount, 5000000);
+      expect(parseSpokenAmount('phòng 301'), isNull);
+    });
+
     test('không có số tiền', () {
       expect(parseSpokenAmount('ăn trưa với bạn'), isNull);
       expect(parseSpokenAmount(''), isNull);
