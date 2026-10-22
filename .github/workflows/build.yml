@@ -1,0 +1,169 @@
+name: Build APK & iOS
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.47.7'
+
+jobs:
+  android:
+    name: Test + APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Cài thư viện
+        run: flutter pub get
+
+      - name: Phân tích mã
+        run: flutter analyze
+
+      - name: Kiểm thử Dart
+        run: flutter test
+
+      # Khoá ký: dùng secret ANDROID_KEYSTORE_BASE64 nếu có; nếu không, tạo một lần và giữ trong cache
+      # để các bản sau cài đè lên được.
+      - name: Khôi phục khoá ký
+        id: keycache
+        uses: actions/cache@v4
+        with:
+          path: ~/.android-signing
+          key: android-signing-v1
+
+      - name: Chuẩn bị khoá ký
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p ~/.android-signing
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android-signing/secret.jks
+            echo "ANDROID_KEYSTORE_PATH=$HOME/.android-signing/secret.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+          else
+            if [ ! -f ~/.android-signing/release.jks ]; then
+              keytool -genkeypair -v -keystore ~/.android-signing/release.jks \
+                -alias sothuchi -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass sothuchi-ci -keypass sothuchi-ci \
+                -dname "CN=So Thu Chi, O=So Thu Chi, C=VN"
+            fi
+            echo "ANDROID_KEYSTORE_PATH=$HOME/.android-signing/release.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=sothuchi-ci" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=sothuchi" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_PASSWORD=sothuchi-ci" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Kiểm thử Kotlin (parser thông báo)
+        working-directory: android
+        run: ./gradlew :app:testReleaseUnitTest --stacktrace
+
+      - name: Đổi tên APK
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/SoThuChi-${VERSION}.apk"
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dist/*.apk
+          retention-days: 30
+
+  ios:
+    name: iOS (IPA chưa ký)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Cài thư viện
+        run: flutter pub get
+
+      - name: Build iOS (không ký)
+        run: flutter build ios --release --no-codesign
+
+      - name: Đóng gói IPA
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
+          rm -rf build/ipa && mkdir -p build/ipa/Payload dist
+          cp -R build/ios/iphoneos/Runner.app build/ipa/Payload/
+          (cd build/ipa && zip -qry "../../dist/SoThuChi-${VERSION}-unsigned.ipa" Payload)
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: dist/*.ipa
+          retention-days: 30
+
+  release:
+    name: Phát hành
+    needs: [android, ios]
+    if: ${{ always() && needs.android.result == 'success' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Thông tin phiên bản
+        id: meta
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
+          echo "tag=v${VERSION}-build.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          ls -la dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Sổ Thu Chi ${{ steps.meta.outputs.version }} (build ${{ github.run_number }})
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          files: dist/*
+          body: |
+            **Android:** tải `SoThuChi-${{ steps.meta.outputs.version }}.apk`, mở để cài (cho phép "Cài ứng dụng không rõ nguồn gốc").
+
+            **iPhone:** tải `SoThuChi-${{ steps.meta.outputs.version }}-unsigned.ipa` rồi cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple ID của bạn).
+
+            Commit: ${{ github.sha }}

@@ -1,0 +1,217 @@
+[
+  {
+    "name": "MBBank chi",
+    "package": "com.mbmobile",
+    "title": "Thông báo biến động số dư",
+    "text": "TK 0xxx6789|GD: -150,000VND 22/10/26 16:30 |SD: 2,345,678VND|ND: NGUYEN VAN A chuyen tien - Ma GD ACSP/ ab123456",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "mbbank", "contentContains": "NGUYEN VAN A chuyen tien"}
+  },
+  {
+    "name": "MBBank thu lương",
+    "package": "com.mbmobile",
+    "title": "Thông báo biến động số dư",
+    "text": "TK 0xxx6789|GD: +15,000,000VND 05/10/26 09:02 |SD: 17,345,678VND|ND: CONG TY ABC TRA LUONG T9",
+    "expect": {"amount": 15000000, "type": "income", "balance": 17345678, "bank": "mbbank", "contentContains": "TRA LUONG"}
+  },
+  {
+    "name": "MBBank định dạng mới",
+    "package": "com.mbmobile",
+    "title": "Biến động số dư",
+    "text": "Tài khoản 0xxx789 | GD: -35.000 VND lúc 12:05 22/10/2026 | SD: 1.234.567 VND | ND: thanh toan QR quan com",
+    "expect": {"amount": 35000, "type": "expense", "balance": 1234567, "bank": "mbbank", "contentContains": "thanh toan QR quan com"}
+  },
+  {
+    "name": "MBBank không có tiêu đề",
+    "package": "com.mbmobile",
+    "title": "",
+    "text": "TK 0xxx6789|GD: -2,500,000VND 21/10/26 20:11 |SD: 345,678VND|ND: Chuyen tien nha",
+    "expect": {"amount": 2500000, "type": "expense", "balance": 345678, "bank": "mbbank"}
+  },
+  {
+    "name": "Vietcombank chi",
+    "package": "com.VCB",
+    "title": "Thông báo VCB",
+    "text": "Số dư TK VCB 0011001234567 -150,000 VND lúc 22-10-2026 16:30:15. Số dư 2,345,678 VND. Ref MBVCB.1234567.NGUYEN VAN A chuyen tien.CT tu 0011001234567 toi 0123456789",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "vcb", "contentContains": "NGUYEN VAN A chuyen tien"}
+  },
+  {
+    "name": "Vietcombank thu",
+    "package": "com.VCB",
+    "title": "",
+    "text": "Số dư TK VCB 0011001234567 +5,000,000 VND lúc 20-10-2026 08:15:02. Số dư 7,345,678 VND. Ref 123456.201026.081502.NGUYEN THI B chuyen tien",
+    "expect": {"amount": 5000000, "type": "income", "balance": 7345678, "bank": "vcb"}
+  },
+  {
+    "name": "Techcombank chi",
+    "package": "vn.com.techcombank.bb.app",
+    "title": "Biến động số dư",
+    "text": "Tài khoản: 19031234567xxx\nSố tiền: -150,000 VND\nSố dư: 2,345,678 VND\nNội dung: chuyen tien an trua",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "tcb", "content": "chuyen tien an trua"}
+  },
+  {
+    "name": "Techcombank tiền tệ đứng trước",
+    "package": "vn.com.techcombank.bb.app",
+    "title": "Techcombank",
+    "text": "TK 1903xxxx5678\nSo tien GD: + VND 3,200,000\nSo du: VND 4,500,000\nND: hoan tien don hang",
+    "expect": {"amount": 3200000, "type": "income", "balance": 4500000, "bank": "tcb", "content": "hoan tien don hang"}
+  },
+  {
+    "name": "BIDV chi",
+    "package": "com.vnpay.bidv",
+    "title": "BIDV SmartBanking",
+    "text": "TK1234567890 tai BIDV -150,000VND vao 16:30 22/10/2026. So du: 2,345,678VND. ND: chuyen tien",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "bidv", "content": "chuyen tien"}
+  },
+  {
+    "name": "VietinBank chi",
+    "package": "com.vietinbank.ipay",
+    "title": "VietinBank iPay",
+    "text": "Thời gian: 22/10/2026 16:30\nTài khoản: 101xxxxx123\nGiao dịch: -150,000VND\nSố dư hiện tại: 2,345,678VND\nNội dung: chuyen tien dien",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "vietinbank", "content": "chuyen tien dien"}
+  },
+  {
+    "name": "ACB chi",
+    "package": "mobile.acb.com.vn",
+    "title": "ACB",
+    "text": "ACB: TK 12345678(VND) - 150,000 luc 16:30 22/10/2026. So du 2,345,678. GD: NGUYEN VAN A chuyen tien",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "acb", "contentContains": "NGUYEN VAN A chuyen tien"}
+  },
+  {
+    "name": "TPBank chi",
+    "package": "com.tpb.mb.gprsandroid",
+    "title": "TPBank",
+    "text": "(TPBank): 22/10/26;16:30\nTK: xxxx1234567\nPS:-150,000VND\nSD: 2,345,678VND\nSD KHA DUNG: 2,345,678VND\nND: chuyen tien\nSO GD: 123",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "tpbank", "content": "chuyen tien"}
+  },
+  {
+    "name": "VPBank thu",
+    "package": "com.vnpay.vpbankonline",
+    "title": "VPBank NEO",
+    "text": "TK 12345678 | 22/10/2026 16:30 | +1,000,000 VND | SD: 3,345,678 VND | ND: tra no",
+    "expect": {"amount": 1000000, "type": "income", "balance": 3345678, "bank": "vpbank", "content": "tra no"}
+  },
+  {
+    "name": "Sacombank chi",
+    "package": "com.sacombank.ewallet",
+    "title": "Sacombank Pay",
+    "text": "Sacombank 22/10/2026 16:30 TK: 0123xxx789 PS: -150,000 VND So du kha dung: 2,345,678 VND ND: thanh toan hoa don",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "sacombank", "content": "thanh toan hoa don"}
+  },
+  {
+    "name": "Agribank chi",
+    "package": "com.vnpay.Agribank3g",
+    "title": "Agribank",
+    "text": "Agribank: 16:30 22/10/2026 Tai khoan 1234xxx: -150,000VND. SD: 2,345,678VND. ND: chuyen tien",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "agribank", "content": "chuyen tien"}
+  },
+  {
+    "name": "MoMo chuyển tiền",
+    "package": "com.mservice.momotransfer",
+    "title": "Chuyển tiền thành công",
+    "text": "Bạn đã chuyển thành công 150.000đ đến NGUYEN VAN A.",
+    "expect": {"amount": 150000, "type": "expense", "bank": "momo"}
+  },
+  {
+    "name": "MoMo nhận tiền",
+    "package": "com.mservice.momotransfer",
+    "title": "Nhận tiền thành công",
+    "text": "Bạn vừa nhận được 200.000đ từ NGUYEN VAN B. Lời nhắn: tra tien an",
+    "expect": {"amount": 200000, "type": "income", "bank": "momo", "content": "tra tien an"}
+  },
+  {
+    "name": "ZaloPay thanh toán",
+    "package": "vn.com.vng.zalopay",
+    "title": "Thanh toán thành công",
+    "text": "Bạn đã thanh toán 89.000 VND cho Grab. Mã giao dịch 221026000123",
+    "expect": {"amount": 89000, "type": "expense", "bank": "zalopay"}
+  },
+  {
+    "name": "Cake bị trừ",
+    "package": "xyz.be.cake",
+    "title": "Cake",
+    "text": "Tài khoản của bạn vừa bị trừ 150.000 đ. Số dư hiện tại: 2.345.678 đ",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "cake"}
+  },
+  {
+    "name": "Cake được cộng",
+    "package": "xyz.be.cake",
+    "title": "Cake",
+    "text": "Tài khoản của bạn vừa được cộng 5.000.000 đ. Số dư hiện tại: 7.345.678 đ",
+    "expect": {"amount": 5000000, "type": "income", "balance": 7345678, "bank": "cake"}
+  },
+  {
+    "name": "Timo giảm",
+    "package": "io.lifestyle.plus",
+    "title": "Timo",
+    "text": "Tài khoản Spend Account vừa giảm 150.000 VND vào 22/10/2026 16:30. Số dư hiện tại: 2.345.678 VND. Mô tả: chuyen tien",
+    "expect": {"amount": 150000, "type": "expense", "balance": 2345678, "bank": "timo", "content": "chuyen tien"}
+  },
+  {
+    "name": "Số tiền có phần thập phân",
+    "package": "com.vnpay.hdbank",
+    "title": "HDBank",
+    "text": "TK 0123xxx: -1,250,000.00 VND luc 22/10/2026 10:00. SD: 10,000,000.00 VND. ND: hoc phi",
+    "expect": {"amount": 1250000, "type": "expense", "balance": 10000000, "bank": "hdbank", "content": "hoc phi"}
+  },
+  {
+    "name": "SMS MBBank",
+    "package": "com.google.android.apps.messaging",
+    "strict": true,
+    "title": "MBBank",
+    "text": "TK 0xxx6789|GD: -50,000VND 22/10/26 07:45 |SD: 1,950,000VND|ND: mua xang",
+    "expect": {"amount": 50000, "type": "expense", "balance": 1950000, "bank": "mbbank", "content": "mua xang"}
+  },
+  {
+    "name": "SMS dấu tổ hợp (NFD)",
+    "package": "com.samsung.android.messaging",
+    "strict": true,
+    "title": "Vietcombank",
+    "text": "Số dư TK VCB 0011001234567 -75,000 VND lúc 22-10-2026 11:30:00. Số dư 1,000,000 VND. Ref ca phe",
+    "expect": {"amount": 75000, "type": "expense", "balance": 1000000, "bank": "vcb"}
+  },
+  {
+    "name": "Khuyến mãi (bỏ qua)",
+    "package": "com.mbmobile",
+    "title": "MB Bank",
+    "text": "Ưu đãi hoàn tiền 50.000đ khi thanh toán QR tại cửa hàng tiện lợi. Nhận ngay!",
+    "expect": null
+  },
+  {
+    "name": "OTP (bỏ qua)",
+    "package": "com.google.android.apps.messaging",
+    "strict": true,
+    "title": "MBBank",
+    "text": "Ma OTP cua Quy khach la 123456 de thanh toan 150.000 VND. Khong cung cap OTP cho bat ky ai.",
+    "expect": null
+  },
+  {
+    "name": "Thông báo đăng nhập (bỏ qua)",
+    "package": "com.mbmobile",
+    "title": "MB Bank",
+    "text": "Tài khoản của Quý khách vừa đăng nhập trên thiết bị mới lúc 16:30 22/10/2026.",
+    "expect": null
+  },
+  {
+    "name": "Thông báo số dư thuần (bỏ qua)",
+    "package": "com.VCB",
+    "title": "Vietcombank",
+    "text": "Số dư tài khoản của quý khách là 2,345,678 VND.",
+    "expect": null
+  },
+  {
+    "name": "SMS tin nhắn thường (bỏ qua)",
+    "package": "com.google.android.apps.messaging",
+    "strict": true,
+    "title": "Mẹ",
+    "text": "Tối nay về ăn cơm nhé, mẹ mua 2 kg thịt hết 300.000đ",
+    "expect": null
+  },
+  {
+    "name": "Tin nhắn chat có số tiền (strict bỏ qua)",
+    "package": "com.zing.zalo",
+    "strict": true,
+    "title": "Nguyễn Văn A",
+    "text": "Ê chuyển tao 200k tiền ăn nha",
+    "expect": null
+  }
+]
