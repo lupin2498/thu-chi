@@ -134,6 +134,19 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                         subtitle: 'Để nhận biết thông báo biến động số dư từ app ngân hàng',
                         onTap: CaptureChannel.openNotificationListenerSettings,
                       ),
+                      if (!_perm.notificationListener)
+                        ListTile(
+                          leading: const Icon(Icons.lock_outline),
+                          title: const Text(
+                            'Nút bật bị mờ / "Cài đặt bị hạn chế"?',
+                          ),
+                          subtitle: const Text(
+                            'Android 13+ chặn ứng dụng cài từ file APK. Mở Thông tin ứng dụng → '
+                            'menu ⋮ góc trên → "Cho phép cài đặt bị hạn chế", rồi quay lại bật "Đọc thông báo".',
+                          ),
+                          trailing: const Icon(Icons.open_in_new),
+                          onTap: CaptureChannel.openAppSettings,
+                        ),
                       _PermTile(
                         ok: _perm.overlay,
                         title: '2. Hiển thị trên ứng dụng khác',

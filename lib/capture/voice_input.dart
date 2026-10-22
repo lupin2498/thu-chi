@@ -30,7 +30,8 @@ class VoiceInput extends ChangeNotifier {
   /// Mức âm lượng 0..1 để vẽ hiệu ứng mic.
   double level = 0;
 
-  String? _localeId;
+  /// Nhận dạng tiếng Việt (Google / Apple đều hỗ trợ vi-VN).
+  static const String _localeId = 'vi_VN';
   bool _ready = false;
   bool _disposed = false;
   void Function(String text, bool isFinal)? _onResult;
@@ -53,7 +54,6 @@ class VoiceInput extends ChangeNotifier {
         );
         return false;
       }
-      _localeId = await _pickVietnameseLocale();
       _ready = true;
       return true;
     } on PlatformException catch (e) {
@@ -68,21 +68,6 @@ class VoiceInput extends ChangeNotifier {
       _set(VoiceState.error, 'Không mở được micro. Hãy gõ nội dung.');
       return false;
     }
-  }
-
-  Future<String?> _pickVietnameseLocale() async {
-    try {
-      final locales = await _stt.locales();
-      for (final l in locales) {
-        final id = l.localeId.toLowerCase();
-        if (id == 'vi_vn' || id == 'vi-vn') return l.localeId;
-      }
-      for (final l in locales) {
-        if (l.localeId.toLowerCase().startsWith('vi')) return l.localeId;
-      }
-    } catch (_) {}
-    // Không liệt kê được ngôn ngữ (một số máy) -> vẫn yêu cầu tiếng Việt.
-    return 'vi_VN';
   }
 
   /// Bắt đầu nghe. [onResult] nhận văn bản (từng phần và cuối cùng).

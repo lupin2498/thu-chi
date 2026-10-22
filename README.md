@@ -25,6 +25,8 @@ Trong app: **Khác → Tự động ghi chép**, bật:
 - *Hiển thị trên ứng dụng khác* (để cửa sổ hiện trên app ngân hàng),
 - *Micro*, *Gửi thông báo*.
 - Máy Xiaomi/Oppo/Vivo: bật thêm "Hiển thị cửa sổ bật lên khi chạy nền".
+- Android 13+ cài từ file APK: nếu nút "Đọc thông báo" bị mờ, vào *Thông tin ứng dụng → ⋮ →
+  Cho phép cài đặt bị hạn chế* rồi bật lại.
 
 Có nút **Giả lập thông báo** để thử toàn bộ luồng mà không cần chuyển khoản thật.
 Mọi xử lý diễn ra trên máy, không gửi dữ liệu ra ngoài.

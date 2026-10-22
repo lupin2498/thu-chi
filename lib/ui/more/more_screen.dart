@@ -157,6 +157,13 @@ class MoreScreen extends StatelessWidget {
     if (v != null) await state.setMonthlyBudget(parseMoneyInput(v));
   }
 
+  /// iPad cần vị trí neo cho bảng chia sẻ.
+  Rect? _origin(BuildContext context) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
   Future<File> _writeTemp(String name, String content) async {
     final dir = await getTemporaryDirectory();
     final f = File('${dir.path}/$name');
@@ -171,6 +178,7 @@ class MoreScreen extends StatelessWidget {
   }
 
   Future<void> _exportCsv(BuildContext context, AppState state) async {
+    final origin = _origin(context);
     try {
       final csv = await state.repo.exportCsv();
       final f = await _writeTemp('so_thu_chi_${_stamp()}.csv', csv);
@@ -178,6 +186,7 @@ class MoreScreen extends StatelessWidget {
         ShareParams(
           files: [XFile(f.path, mimeType: 'text/csv')],
           subject: 'Sổ thu chi',
+          sharePositionOrigin: origin,
         ),
       );
     } catch (e) {
@@ -186,6 +195,7 @@ class MoreScreen extends StatelessWidget {
   }
 
   Future<void> _backup(BuildContext context, AppState state) async {
+    final origin = _origin(context);
     try {
       final data = await state.repo.exportAll();
       final f = await _writeTemp(
@@ -196,6 +206,7 @@ class MoreScreen extends StatelessWidget {
         ShareParams(
           files: [XFile(f.path, mimeType: 'application/json')],
           subject: 'Sao lưu Sổ thu chi',
+          sharePositionOrigin: origin,
         ),
       );
     } catch (e) {

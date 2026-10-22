@@ -29,12 +29,9 @@ class AppDatabase {
         // CSDL trong bộ nhớ (kiểm thử) phải tách biệt từng lần mở.
         singleInstance: dbPath != inMemoryDatabasePath,
         onConfigure: (db) async {
+          // Cửa sổ ghi nhanh và app chính chạy chung tiến trình nên dùng chung
+          // một kết nối (singleInstance) -> không cần đổi journal_mode.
           await db.execute('PRAGMA foreign_keys = ON');
-          // WAL cho phép popup và app chính cùng đọc/ghi an toàn.
-          if (dbPath != inMemoryDatabasePath) {
-            await db.rawQuery('PRAGMA journal_mode = WAL');
-          }
-          await db.rawQuery('PRAGMA busy_timeout = 3000');
         },
         onCreate: (db, version) async {
           await createSchema(db);

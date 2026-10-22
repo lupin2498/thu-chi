@@ -82,7 +82,19 @@ class _SoThuChiAppState extends State<SoThuChiApp> with WidgetsBindingObserver {
     return true;
   }
 
+  Uri? _lastLink;
+  DateTime? _lastLinkAt;
+
   void _openLink(Uri uri) {
+    // iOS/Android có thể gửi cùng một liên kết hai lần (initialRoute + pushRoute).
+    final now = DateTime.now();
+    if (_lastLink == uri &&
+        _lastLinkAt != null &&
+        now.difference(_lastLinkAt!) < const Duration(seconds: 5)) {
+      return;
+    }
+    _lastLink = uri;
+    _lastLinkAt = now;
     final c = captureFromUri(uri);
     final ctx = rootNavigatorKey.currentContext;
     if (c == null || ctx == null) return;
