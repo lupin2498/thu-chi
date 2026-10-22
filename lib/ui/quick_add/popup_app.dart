@@ -92,11 +92,11 @@ class _PopupHostState extends State<PopupHost> {
     });
   }
 
-  void _close() {
+  void _close({String? message}) {
     if (widget.onClose != null) {
       widget.onClose!();
     } else {
-      CaptureChannel.closePopup();
+      CaptureChannel.closePopup(message: message);
     }
   }
 
@@ -114,7 +114,11 @@ class _PopupHostState extends State<PopupHost> {
       });
       return;
     }
-    _close();
+    _close(
+      message: outcome == QuickAddOutcome.saved
+          ? 'Sổ Thu Chi: đã lưu giao dịch'
+          : null,
+    );
   }
 
   @override

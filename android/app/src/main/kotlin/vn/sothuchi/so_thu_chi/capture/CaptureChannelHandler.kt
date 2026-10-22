@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.widget.Toast
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -111,6 +112,10 @@ class CaptureChannelHandler(
                     result.success(CaptureStore.get(ctx, id)?.let { CaptureStore.toMap(it) })
                 }
                 "closePopup" -> {
+                    val message = call.argument<String>("message")
+                    if (!message.isNullOrEmpty()) {
+                        Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
+                    }
                     if (popup != null) {
                         popup.finish()
                         @Suppress("DEPRECATION")

@@ -258,7 +258,9 @@ class CaptureChannel {
     return m == null ? null : CaptureData.fromMap(m);
   }
 
-  static Future<void> closePopup() => _invoke<void>('closePopup');
+  /// Đóng cửa sổ ghi nhanh; [message] hiện dạng Toast (vd "Đã lưu giao dịch").
+  static Future<void> closePopup({String? message}) =>
+      _invoke<void>('closePopup', {'message': message});
 
   /// Giả lập một thông báo ngân hàng để thử toàn bộ luồng.
   static Future<String?> simulate({

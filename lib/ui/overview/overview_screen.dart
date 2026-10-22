@@ -70,7 +70,9 @@ class _OverviewScreenState extends State<OverviewScreen> {
       _rev = state.revision;
       _future = _load(state);
       // Quay lại từ màn Cài đặt hệ thống -> cập nhật trạng thái quyền.
-      if (!first) WidgetsBinding.instance.addPostFrameCallback((_) => _loadPerm());
+      if (!first) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _loadPerm());
+      }
     }
     return RefreshIndicator(
       onRefresh: () async {
