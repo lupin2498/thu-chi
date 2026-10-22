@@ -287,7 +287,7 @@ class _CategoryRow extends StatelessWidget {
             SizedBox(
               width: 72,
               child: Text(
-                '${(ratio * 100).toStringAsFixed(1)}% · ${total.count} lần',
+                '${(ratio * 100).toStringAsFixed(1).replaceAll('.', ',')}% · ${total.count} lần',
                 textAlign: TextAlign.end,
                 style: const TextStyle(fontSize: 11),
               ),
