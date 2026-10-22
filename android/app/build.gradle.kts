@@ -68,6 +68,12 @@ kotlin {
     }
 }
 
+// Robolectric cần tài nguyên Android: đảm bảo asset Flutter được chép trước khi đóng gói cho unit test.
+tasks.configureEach {
+    val m = Regex("^package(\\w+)UnitTestForUnitTest$").find(name)
+    if (m != null) dependsOn("copyFlutterAssets${m.groupValues[1]}")
+}
+
 dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

@@ -83,10 +83,6 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Kiểm thử Kotlin (parser thông báo)
-        working-directory: android
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
-
       - name: Đổi tên APK
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
@@ -99,6 +95,15 @@ jobs:
           name: android-apk
           path: dist/*.apk
           retention-days: 30
+
+      - name: Kiểm thử Kotlin (parser, luồng thông báo - Robolectric)
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Báo cáo test Kotlin
+        if: failure()
+        run: |
+          find build/app/test-results -name "*.xml" -exec grep -l "<failure" {} \; | xargs -r -I{} sh -c 'echo "== {}"; grep -A30 "<failure" {} | head -60'
 
   ios:
     name: iOS (IPA chưa ký)
