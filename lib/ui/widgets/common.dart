@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/services.dart';
+
 import '../../core/format.dart';
 import '../../data/models.dart';
 import '../theme.dart';
@@ -239,4 +241,110 @@ Future<bool> confirmDialog(
     ),
   );
   return r ?? false;
+}
+
+/// Hộp thoại nhập chữ/số tiền (tự quản lý controller để không bị dùng sau khi huỷ).
+Future<String?> showTextInputDialog(
+  BuildContext context, {
+  required String title,
+  String initial = '',
+  String? hint,
+  String? suffix,
+  bool money = false,
+  int maxLines = 1,
+  String confirm = 'Lưu',
+  bool pasteButton = false,
+}) {
+  return showDialog<String>(
+    context: context,
+    builder: (_) => _TextInputDialog(
+      title: title,
+      initial: initial,
+      hint: hint,
+      suffix: suffix,
+      money: money,
+      maxLines: maxLines,
+      confirm: confirm,
+      pasteButton: pasteButton,
+    ),
+  );
+}
+
+class _TextInputDialog extends StatefulWidget {
+  const _TextInputDialog({
+    required this.title,
+    required this.initial,
+    required this.hint,
+    required this.suffix,
+    required this.money,
+    required this.maxLines,
+    required this.confirm,
+    required this.pasteButton,
+  });
+
+  final String title;
+  final String initial;
+  final String? hint;
+  final String? suffix;
+  final bool money;
+  final int maxLines;
+  final String confirm;
+  final bool pasteButton;
+
+  @override
+  State<_TextInputDialog> createState() => _TextInputDialogState();
+}
+
+class _TextInputDialogState extends State<_TextInputDialog> {
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.initial,
+  );
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _paste() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text;
+    if (text != null && text.isNotEmpty && mounted) {
+      setState(() => _ctrl.text = text);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _ctrl,
+        autofocus: true,
+        maxLines: widget.maxLines,
+        keyboardType: widget.money ? TextInputType.number : null,
+        inputFormatters: widget.money ? [MoneyInputFormatter()] : null,
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          suffixText: widget.suffix,
+        ),
+      ),
+      actions: [
+        if (widget.pasteButton)
+          TextButton.icon(
+            onPressed: _paste,
+            icon: const Icon(Icons.content_paste),
+            label: const Text('Dán'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Huỷ'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _ctrl.text),
+          child: Text(widget.confirm),
+        ),
+      ],
+    );
+  }
 }

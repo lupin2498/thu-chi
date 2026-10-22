@@ -45,6 +45,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Future<List<TransactionRecord>>? _future;
   String _key = '';
 
+  /// Giao dịch vừa vuốt xoá: ẩn ngay để Dismissible rời khỏi cây trước khi tải lại.
+  final Set<int> _removed = {};
+
   bool get _fixedRange => widget.start != null && widget.end != null;
 
   @override
@@ -199,9 +202,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 if (!snap.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final list = snap.data!;
+                final list = snap.data!
+                    .where((t) => !_removed.contains(t.id))
+                    .toList();
                 return _GroupedList(
                   list: list,
+                  onRemoved: (t) => setState(() => _removed.add(t.id!)),
                   showSummary: true,
                   emptyText: _search.isNotEmpty
                       ? 'Không tìm thấy giao dịch phù hợp'
@@ -219,11 +225,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 class _GroupedList extends StatelessWidget {
   const _GroupedList({
     required this.list,
+    required this.onRemoved,
     required this.showSummary,
     required this.emptyText,
   });
 
   final List<TransactionRecord> list;
+  final ValueChanged<TransactionRecord> onRemoved;
   final bool showSummary;
   final String emptyText;
 
@@ -347,7 +355,8 @@ class _GroupedList extends StatelessWidget {
                   ),
                 ),
                 const Divider(height: 8),
-                for (final t in items) _DismissibleTxn(txn: t),
+                for (final t in items)
+                  _DismissibleTxn(txn: t, onRemoved: onRemoved),
               ],
             ),
           ),
@@ -389,9 +398,10 @@ class _SummaryCell extends StatelessWidget {
 }
 
 class _DismissibleTxn extends StatelessWidget {
-  const _DismissibleTxn({required this.txn});
+  const _DismissibleTxn({required this.txn, required this.onRemoved});
 
   final TransactionRecord txn;
+  final ValueChanged<TransactionRecord> onRemoved;
 
   @override
   Widget build(BuildContext context) {
@@ -415,6 +425,7 @@ class _DismissibleTxn extends StatelessWidget {
       onDismissed: (_) async {
         final state = context.read<AppState>();
         final messenger = ScaffoldMessenger.maybeOf(context);
+        onRemoved(txn);
         await state.deleteTransaction(txn.id!);
         messenger
           ?..hideCurrentSnackBar()

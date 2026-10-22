@@ -370,6 +370,7 @@ class _AccountEditorState extends State<AccountEditor> {
           const SizedBox(height: 12),
           DropdownButtonFormField<AccountType>(
             initialValue: _type,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Loại tài khoản'),
             items: [
               for (final t in AccountType.values)

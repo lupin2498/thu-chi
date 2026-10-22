@@ -616,32 +616,14 @@ class _ExpensePie extends StatelessWidget {
 
 /// Dán nội dung SMS / thông báo ngân hàng từ bộ nhớ tạm để ghi nhanh.
 Future<void> pasteBankText(BuildContext context) async {
-  final controller = TextEditingController();
-  final text = await showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Dán nội dung SMS / thông báo'),
-      content: TextField(
-        controller: controller,
-        maxLines: 5,
-        autofocus: true,
-        decoration: const InputDecoration(
-          hintText: 'VD: TK 0xxx|GD: -150,000VND ... |SD: ...|ND: ...',
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Huỷ'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, controller.text),
-          child: const Text('Phân tích'),
-        ),
-      ],
-    ),
+  final text = await showTextInputDialog(
+    context,
+    title: 'Dán nội dung SMS / thông báo',
+    hint: 'VD: TK 0xxx|GD: -150,000VND ... |SD: ...|ND: ...',
+    maxLines: 5,
+    confirm: 'Phân tích',
+    pasteButton: true,
   );
-  controller.dispose();
   if (text == null || text.trim().isEmpty || !context.mounted) return;
   final capture = CaptureData.fromText(text);
   if (capture == null) {

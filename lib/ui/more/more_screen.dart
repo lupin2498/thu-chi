@@ -145,39 +145,16 @@ class MoreScreen extends StatelessWidget {
   }
 
   Future<void> _editBudget(BuildContext context, AppState state) async {
-    final ctrl = TextEditingController(
-      text: state.settings.monthlyBudget > 0
-          ? formatNumber(state.settings.monthlyBudget)
-          : '',
+    final current = state.settings.monthlyBudget;
+    final v = await showTextInputDialog(
+      context,
+      title: 'Hạn mức chi mỗi tháng',
+      initial: current > 0 ? formatNumber(current) : '',
+      hint: '0 = không đặt',
+      suffix: 'đ',
+      money: true,
     );
-    final v = await showDialog<int>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hạn mức chi mỗi tháng'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [MoneyInputFormatter()],
-          decoration: const InputDecoration(
-            suffixText: 'đ',
-            hintText: '0 = không đặt',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Huỷ'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, parseMoneyInput(ctrl.text)),
-            child: const Text('Lưu'),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (v != null) await state.setMonthlyBudget(v);
+    if (v != null) await state.setMonthlyBudget(parseMoneyInput(v));
   }
 
   Future<File> _writeTemp(String name, String content) async {
