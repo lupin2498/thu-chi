@@ -66,8 +66,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     if (_rev != state.revision || _future == null) {
+      final first = _future == null;
       _rev = state.revision;
       _future = _load(state);
+      // Quay lại từ màn Cài đặt hệ thống -> cập nhật trạng thái quyền.
+      if (!first) WidgetsBinding.instance.addPostFrameCallback((_) => _loadPerm());
     }
     return RefreshIndicator(
       onRefresh: () async {
