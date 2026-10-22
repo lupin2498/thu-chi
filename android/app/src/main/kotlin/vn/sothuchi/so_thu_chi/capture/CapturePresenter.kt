@@ -73,8 +73,17 @@ object CapturePresenter {
         }
     }
 
-    @SuppressLint("SetTextI18n")
     private fun showBanner(ctx: Context, capture: JSONObject) {
+        try {
+            buildAndShowBanner(ctx, capture)
+        } catch (e: Exception) {
+            // Thẻ nổi chỉ là phụ trợ; lỗi không được chặn việc mở cửa sổ ghi nhanh.
+            Log.w(TAG, "Không hiện được thẻ nổi", e)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun buildAndShowBanner(ctx: Context, capture: JSONObject) {
         dismissBanner()
         val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
         val dp = { v: Float -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, ctx.resources.displayMetrics).toInt() }
