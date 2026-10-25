@@ -109,10 +109,10 @@ class _QuickAddPanelState extends State<QuickAddPanel> {
   void _onSpeech(String text, bool isFinal) {
     if (!mounted) return;
     var note = text;
-    if (!_fromBank && isFinal) {
-      // Ghi thủ công: hiểu cả số tiền trong câu nói ("ăn trưa 50 nghìn").
+    if (isFinal && parseMoneyInput(_amountCtrl.text) == 0) {
+      // Chưa có số tiền: hiểu cả số tiền trong câu nói ("ăn trưa 50 nghìn").
       final parsed = parseSpokenAmount(text);
-      if (parsed != null && parseMoneyInput(_amountCtrl.text) == 0) {
+      if (parsed != null) {
         _amountCtrl.text = formatNumber(parsed.amount);
         note = parsed.rest;
       }
@@ -362,9 +362,11 @@ class _QuickAddPanelState extends State<QuickAddPanel> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    c != null
+                    c == null
+                        ? 'Nói "ăn trưa 50 nghìn" hoặc gõ'
+                        : c.amount > 0
                         ? 'Đã trích xuất số tiền · ${formatTime(c.time)}'
-                        : 'Nói "ăn trưa 50 nghìn" hoặc gõ',
+                        : 'Chưa đọc được số tiền – nói hoặc nhập',
                     style: theme.textTheme.bodySmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

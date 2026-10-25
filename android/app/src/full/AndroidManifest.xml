@@ -1,0 +1,23 @@
+<!-- Bản đầy đủ: tự bật cửa sổ ghi nhanh khi có thông báo biến động số dư.
+     Lưu ý: Play Protect (chống lừa đảo nâng cao) chặn cài APK có quyền đọc thông báo nếu cài từ
+     trình duyệt / ứng dụng nhắn tin / trình quản lý tệp; cài qua máy tính (adb) hoặc kho ứng dụng. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Cửa sổ ghi nhanh hiện trên ứng dụng ngân hàng -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Thông báo nhắc ghi chép (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <!-- Đọc thông báo biến động số dư -->
+        <service
+            android:name=".capture.BankNotificationListener"
+            android:label="Sổ Thu Chi - ghi chép tự động"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

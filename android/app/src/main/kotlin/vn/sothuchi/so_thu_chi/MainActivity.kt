@@ -1,11 +1,9 @@
 package vn.sothuchi.so_thu_chi
 
-import android.content.ComponentName
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-import vn.sothuchi.so_thu_chi.capture.BankNotificationListener
 import vn.sothuchi.so_thu_chi.capture.CaptureChannelHandler
 
 class MainActivity : FlutterActivity() {
@@ -19,9 +17,9 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Sau khi cập nhật app, một số máy không tự gắn lại dịch vụ đọc thông báo.
-        if (CaptureChannelHandler.isListenerEnabled(this)) {
+        if (BuildConfig.NOTIFICATION_CAPTURE && CaptureChannelHandler.isListenerEnabled(this)) {
             try {
-                NotificationListenerService.requestRebind(ComponentName(this, BankNotificationListener::class.java))
+                NotificationListenerService.requestRebind(CaptureChannelHandler.listenerComponent(this))
             } catch (e: Exception) {
                 // bỏ qua
             }

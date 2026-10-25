@@ -17,6 +17,7 @@ import 'helpers.dart';
 class FakeNative {
   final calls = <MethodCall>[];
   var permissions = <String, bool>{
+    'notificationCapture': true,
     'notificationListener': false,
     'overlay': false,
     'postNotifications': true,
@@ -429,6 +430,82 @@ void main() {
     await tester.tap(find.text('Hoàn tác'));
     await tester.pumpAndSettle();
     expect((await state.repo.transactions()).length, 3);
+  });
+
+  group('Bản tiêu chuẩn (không quyền đọc thông báo)', () {
+    setUp(() {
+      native.permissions = {'notificationCapture': false, 'microphone': true};
+    });
+
+    testWidgets('màn hướng dẫn ghi qua Chia sẻ', (tester) async {
+      setPhoneSize(tester, height: 1600);
+      final state = await createState();
+      await pushPage(tester, state, const AutoCaptureScreen());
+      expect(find.text('Ghi từ biên lai ngân hàng'), findsOneWidget);
+      expect(find.textContaining('Ghi vào Sổ Thu Chi'), findsWidgets);
+      expect(find.text('Cấp quyền'), findsNothing);
+      expect(find.text('1. Đọc thông báo'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('Phân tích'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Phân tích'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Chi tiền: 150.000 đ'), findsOneWidget);
+    });
+
+    testWidgets('thẻ hướng dẫn ở Tổng quan chỉ hiện đến khi xem', (
+      tester,
+    ) async {
+      setPhoneSize(tester);
+      final state = await createState();
+      await tester.pumpWidget(SoThuChiApp(state: state));
+      await tester.pumpAndSettle();
+      expect(find.text('Ghi nhanh sau chuyển khoản'), findsOneWidget);
+      expect(find.text('Bật tự động ghi chép'), findsNothing);
+      await tester.tap(find.text('Ghi nhanh sau chuyển khoản'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ghi từ biên lai ngân hàng'), findsOneWidget);
+      expect(state.settings.onboardedCapture, isTrue);
+      Navigator.of(tester.element(find.text('Ghi từ biên lai ngân hàng')))
+          .pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Ghi nhanh sau chuyển khoản'), findsNothing);
+    });
+
+    testWidgets('biên lai chưa đọc được số tiền -> nhập tay', (tester) async {
+      setPhoneSize(tester, width: 360, height: 700);
+      final state = await createState();
+      await tester.pumpWidget(
+        wrap(
+          state,
+          PopupHost(
+            initial: CaptureData.fromMap({
+              ...captureMap('s', 0),
+              'content': 'Chuyển tới NGUYEN VAN A',
+            }),
+            onClose: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Chưa đọc được số tiền – nói hoặc nhập'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('quick_save')));
+      await tester.pump();
+      expect(find.text('Nhập số tiền'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('quick_amount')), '120000');
+      await tester.tap(find.byKey(const Key('quick_save')));
+      await tester.pumpAndSettle();
+      expect((await state.repo.transactions()).single.amount, 120000);
+    });
   });
 
   test('CaptureData.fromMap chịu được dữ liệu thiếu', () {

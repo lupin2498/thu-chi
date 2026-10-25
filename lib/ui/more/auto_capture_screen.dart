@@ -103,6 +103,13 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
   @override
   Widget build(BuildContext context) {
     if (!CaptureChannel.supported) return const IosCaptureGuide();
+    if (!_loading && !_perm.notificationCapture) {
+      return ShareCaptureGuide(
+        testCtrl: _testCtrl,
+        testResult: _testResult,
+        onTest: _testParse,
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Tự động ghi chép')),
       body: _loading
@@ -434,6 +441,132 @@ class IosCaptureGuide extends StatelessWidget {
                   '• Liên kết ghi trực tiếp: sothuchi://app/add?amount=150000&note=An%20trua',
                   style: style,
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bản tiêu chuẩn (không có quyền đọc thông báo để cài được qua Play Protect):
+/// ghi giao dịch bằng nút "Chia sẻ" biên lai của ứng dụng ngân hàng.
+class ShareCaptureGuide extends StatelessWidget {
+  const ShareCaptureGuide({
+    super.key,
+    required this.testCtrl,
+    required this.testResult,
+    required this.onTest,
+  });
+
+  final TextEditingController testCtrl;
+  final String? testResult;
+  final VoidCallback onTest;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodyMedium;
+    Widget step(String n, String text) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 12,
+            child: Text(n, style: const TextStyle(fontSize: 12)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: style)),
+        ],
+      ),
+    );
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ghi nhanh sau chuyển khoản')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+        children: [
+          SectionCard(
+            title: 'Ghi từ biên lai ngân hàng',
+            child: Column(
+              children: [
+                step(
+                  '1',
+                  'Chuyển khoản xong trên MB Bank (hoặc ngân hàng/ví bất kỳ), ở màn hình "Chuyển khoản thành công" bấm "Chia sẻ".',
+                ),
+                step('2', 'Chọn "Ghi vào Sổ Thu Chi".'),
+                step(
+                  '3',
+                  'Cửa sổ ghi nhanh hiện ngay trên màn hình ngân hàng với số tiền đã đọc sẵn từ biên lai, micro chờ sẵn: nói tên khoản (vd "ăn trưa") rồi bấm Lưu.',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Consumer<AppState>(
+            builder: (context, state, _) => Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Tự bật micro khi mở cửa sổ'),
+                    value: state.settings.autoListen,
+                    onChanged: state.setAutoListen,
+                  ),
+                  SwitchListTile(
+                    title: const Text('Tự lưu sau khi nói xong'),
+                    subtitle: const Text(
+                      'Đếm ngược 3 giây, chạm bất kỳ đâu để huỷ',
+                    ),
+                    value: state.settings.autoSaveAfterVoice,
+                    onChanged: state.setAutoSaveAfterVoice,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SectionCard(
+            title: 'Cách khác',
+            child: Text(
+              '• Sao chép SMS / thông báo biến động số dư → Tổng quan → "Dán SMS/thông báo".\n'
+              '• Bấm "Nói để ghi" và nói cả số tiền: "ăn trưa 50 nghìn".',
+              style: style,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SectionCard(
+            title: 'Muốn cửa sổ tự hiện, không cần bấm Chia sẻ?',
+            child: Text(
+              'Dùng bản "đầy đủ" (tệp SoThuChi-…-full.apk): tự đọc thông báo biến động số dư. '
+              'Play Protect chặn cài bản này khi mở tệp từ trình duyệt, Zalo hay trình quản lý tệp vì có quyền đọc thông báo; '
+              'cài từ máy tính bằng lệnh "adb install", hoặc tạm tắt "Quét ứng dụng bằng Play Protect" trong CH Play rồi bật lại sau khi cài. '
+              'Cài đè lên bản này vẫn giữ nguyên dữ liệu.',
+              style: style,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SectionCard(
+            title: 'Thử nghiệm',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: testCtrl,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Nội dung thông báo / SMS / biên lai',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: onTest,
+                  child: const Text('Phân tích'),
+                ),
+                if (testResult != null) ...[
+                  const SizedBox(height: 8),
+                  Text(testResult!),
+                ],
               ],
             ),
           ),

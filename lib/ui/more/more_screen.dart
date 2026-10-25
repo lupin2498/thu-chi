@@ -133,7 +133,7 @@ class MoreScreen extends StatelessWidget {
           const Card(
             child: ListTile(
               leading: Icon(Icons.info_outline),
-              title: Text('Sổ Thu Chi 1.0.0'),
+              title: Text('Sổ Thu Chi 1.0.1'),
               subtitle: Text(
                 'Dữ liệu lưu trên máy của bạn. Không quảng cáo, không gửi dữ liệu ra ngoài.',
               ),

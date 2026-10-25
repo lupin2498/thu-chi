@@ -34,6 +34,27 @@ android {
         versionName = flutter.versionName
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // standard: cài được bình thường (không khai báo quyền đọc thông báo) – ghi giao dịch qua
+    //           nút "Chia sẻ" biên lai của app ngân hàng (OCR) / dán SMS / giọng nói.
+    // full:     thêm dịch vụ đọc thông báo biến động số dư + cửa sổ nổi tự bật (Play Protect tại
+    //           Việt Nam chặn cài bản này từ trình duyệt / Zalo / trình quản lý tệp).
+    // Cùng applicationId + khoá ký nên có thể cài đè qua lại, giữ nguyên dữ liệu.
+    flavorDimensions += "capture"
+    productFlavors {
+        create("standard") {
+            dimension = "capture"
+            buildConfigField("boolean", "NOTIFICATION_CAPTURE", "false")
+        }
+        create("full") {
+            dimension = "capture"
+            buildConfigField("boolean", "NOTIFICATION_CAPTURE", "true")
+        }
+    }
+
     signingConfigs {
         if (releaseStoreFile != null && file(releaseStoreFile).exists()) {
             create("release") {
@@ -82,6 +103,8 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
+    // Đọc chữ trên ảnh biên lai chuyển khoản (chạy trên máy, mô hình tích hợp sẵn).
+    implementation("com.google.mlkit:text-recognition:16.0.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
     testImplementation("org.robolectric:robolectric:4.17")

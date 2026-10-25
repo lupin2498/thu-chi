@@ -231,7 +231,7 @@ object BankParser {
         return content
     }
 
-    private fun detectBankKey(folded: String): String? {
+    internal fun detectBankKey(folded: String): String? {
         for (b in BankApps.all) {
             for (alias in b.aliases) {
                 val a = alias.trim()

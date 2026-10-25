@@ -158,7 +158,16 @@ class _PopupHostState extends State<PopupHost> {
                     child: !_ready
                         ? const SizedBox(
                             height: 160,
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 12),
+                                  Text('Đang đọc số tiền…'),
+                                ],
+                              ),
+                            ),
                           )
                         : SingleChildScrollView(
                             child: Column(

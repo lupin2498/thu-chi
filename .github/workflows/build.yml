@@ -80,14 +80,28 @@ jobs:
             echo "ANDROID_KEY_PASSWORD=sothuchi-ci" >> "$GITHUB_ENV"
           fi
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build APK (bản tiêu chuẩn + bản đầy đủ)
+        run: |
+          flutter build apk --release --flavor standard
+          flutter build apk --release --flavor full
+
+      # Bản tiêu chuẩn phải cài được qua Play Protect: không có quyền đọc thông báo / SMS / trợ năng / hiển thị trên app khác.
+      - name: Kiểm tra quyền của bản tiêu chuẩn
+        run: |
+          AAPT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/aapt2
+          "$AAPT" dump xmltree build/app/outputs/flutter-apk/app-standard-release.apk --file AndroidManifest.xml > standard-manifest.txt
+          if grep -E "BIND_NOTIFICATION_LISTENER_SERVICE|BIND_ACCESSIBILITY_SERVICE|RECEIVE_SMS|READ_SMS|SYSTEM_ALERT_WINDOW" standard-manifest.txt; then
+            echo "::error::Bản tiêu chuẩn chứa quyền bị Play Protect chặn"; exit 1
+          fi
+          "$AAPT" dump xmltree build/app/outputs/flutter-apk/app-full-release.apk --file AndroidManifest.xml | grep -q BIND_NOTIFICATION_LISTENER_SERVICE
+          echo "OK"
 
       - name: Đổi tên APK
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //; s/+.*//')
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk "dist/SoThuChi-${VERSION}.apk"
+          cp build/app/outputs/flutter-apk/app-standard-release.apk "dist/SoThuChi-${VERSION}.apk"
+          cp build/app/outputs/flutter-apk/app-full-release.apk "dist/SoThuChi-${VERSION}-full.apk"
           ls -la dist
 
       - uses: actions/upload-artifact@v5
@@ -98,7 +112,7 @@ jobs:
 
       - name: Kiểm thử Kotlin (parser, luồng thông báo - Robolectric)
         working-directory: android
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        run: ./gradlew :app:testStandardDebugUnitTest :app:testFullDebugUnitTest --stacktrace
 
       - name: Báo cáo test Kotlin
         if: failure()
@@ -167,8 +181,13 @@ jobs:
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           files: dist/*
           body: |
-            **Android:** tải `SoThuChi-${{ steps.meta.outputs.version }}.apk`, mở để cài (cho phép "Cài ứng dụng không rõ nguồn gốc").
+            **Android – bản tiêu chuẩn (khuyên dùng):** `SoThuChi-${{ steps.meta.outputs.version }}.apk` – cài bình thường (không bị Play Protect chặn).
+            Chuyển khoản xong, bấm **Chia sẻ** biên lai trong app ngân hàng → **Ghi vào Sổ Thu Chi**: cửa sổ ghi nhanh hiện số tiền đọc sẵn, micro chờ nói tên khoản.
 
-            **iPhone:** tải `SoThuChi-${{ steps.meta.outputs.version }}-unsigned.ipa` rồi cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple ID của bạn).
+            **Android – bản đầy đủ:** `SoThuChi-${{ steps.meta.outputs.version }}-full.apk` – tự bật cửa sổ khi có thông báo biến động số dư (không cần bấm Chia sẻ).
+            Có quyền đọc thông báo nên Play Protect chặn khi mở tệp từ trình duyệt / Zalo / trình quản lý tệp: cài bằng `adb install` từ máy tính,
+            hoặc tạm tắt "Quét ứng dụng bằng Play Protect" (CH Play → ảnh đại diện → Play Protect → ⚙) rồi bật lại sau khi cài. Hai bản cài đè lên nhau, giữ nguyên dữ liệu.
+
+            **iPhone:** `SoThuChi-${{ steps.meta.outputs.version }}-unsigned.ipa` – cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple ID của bạn).
 
             Commit: ${{ github.sha }}

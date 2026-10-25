@@ -16,6 +16,7 @@ import android.widget.Toast
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import vn.sothuchi.so_thu_chi.BuildConfig
 
 /** Kênh `vn.sothuchi/capture` dùng chung cho MainActivity và QuickAddActivity. */
 class CaptureChannelHandler(
@@ -108,8 +109,8 @@ class CaptureChannelHandler(
                     result.success(null)
                 }
                 "getLaunchCapture" -> {
-                    val id = popup?.currentCaptureId()
-                    result.success(CaptureStore.get(ctx, id)?.let { CaptureStore.toMap(it) })
+                    val p = popup
+                    if (p == null) result.success(null) else p.launchCapture { result.success(it) }
                 }
                 "closePopup" -> {
                     val message = call.argument<String>("message")
@@ -148,6 +149,8 @@ class CaptureChannelHandler(
     }
 
     private fun permissions(): Map<String, Boolean> = mapOf(
+        // Bản tiêu chuẩn không có dịch vụ đọc thông báo (để không bị Play Protect chặn cài).
+        "notificationCapture" to BuildConfig.NOTIFICATION_CAPTURE,
         "notificationListener" to isListenerEnabled(ctx),
         "overlay" to Settings.canDrawOverlays(ctx),
         "postNotifications" to notificationsEnabled(),
@@ -164,7 +167,8 @@ class CaptureChannelHandler(
     }
 
     private fun openNotificationListenerSettings() {
-        val component = ComponentName(ctx, BankNotificationListener::class.java)
+        if (!BuildConfig.NOTIFICATION_CAPTURE) return
+        val component = listenerComponent(ctx)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val i = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
                 .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, component.flattenToString())
@@ -235,8 +239,13 @@ class CaptureChannelHandler(
     companion object {
         const val CHANNEL = "vn.sothuchi/capture"
 
+        /** Dịch vụ đọc thông báo chỉ có trong bản "full" (src/full). */
+        fun listenerComponent(ctx: Context): ComponentName =
+            ComponentName(ctx.packageName, "vn.sothuchi.so_thu_chi.capture.BankNotificationListener")
+
         fun isListenerEnabled(ctx: Context): Boolean {
-            val component = ComponentName(ctx, BankNotificationListener::class.java)
+            if (!BuildConfig.NOTIFICATION_CAPTURE) return false
+            val component = listenerComponent(ctx)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 return nm.isNotificationListenerAccessGranted(component)

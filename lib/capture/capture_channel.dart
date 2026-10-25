@@ -75,12 +75,15 @@ class CaptureData {
 @immutable
 class CapturePermissions {
   const CapturePermissions({
+    this.notificationCapture = false,
     this.notificationListener = false,
     this.overlay = false,
     this.postNotifications = false,
     this.microphone = false,
   });
 
+  /// Bản cài có dịch vụ đọc thông báo (bản "full"). Bản tiêu chuẩn ghi qua nút Chia sẻ.
+  final bool notificationCapture;
   final bool notificationListener;
   final bool overlay;
   final bool postNotifications;
@@ -90,6 +93,7 @@ class CapturePermissions {
 
   factory CapturePermissions.fromMap(Map<Object?, Object?> m) =>
       CapturePermissions(
+        notificationCapture: m['notificationCapture'] == true,
         notificationListener: m['notificationListener'] == true,
         overlay: m['overlay'] == true,
         postNotifications: m['postNotifications'] == true,

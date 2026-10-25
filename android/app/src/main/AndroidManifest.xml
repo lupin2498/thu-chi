@@ -1,13 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Nhập nội dung bằng giọng nói -->
+    <!-- Nhập nội dung bằng giọng nói.
+         Bản tiêu chuẩn KHÔNG khai báo quyền đọc thông báo / hiển thị trên app khác
+         (Play Protect chặn cài APK có các quyền này tại Việt Nam); bản "full" bổ sung
+         trong src/full/AndroidManifest.xml. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!-- Cửa sổ ghi nhanh hiện trên ứng dụng ngân hàng -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- Thông báo nhắc ghi chép (Android 13+) -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:label="Sổ Thu Chi"
@@ -40,28 +38,30 @@
             </intent-filter>
         </activity>
 
-        <!-- Cửa sổ ghi nhanh trong suốt, nổi trên ứng dụng ngân hàng -->
+        <!-- Cửa sổ ghi nhanh trong suốt, nổi trên ứng dụng ngân hàng.
+             Nhận "Chia sẻ" biên lai (ảnh / chữ) từ ứng dụng ngân hàng. -->
         <activity
             android:name=".capture.QuickAddActivity"
-            android:exported="false"
+            android:label="Ghi vào Sổ Thu Chi"
+            android:exported="true"
             android:launchMode="singleTask"
             android:taskAffinity="vn.sothuchi.so_thu_chi.quickadd"
             android:excludeFromRecents="true"
             android:theme="@style/QuickAddTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize|stateHidden" />
-
-        <!-- Đọc thông báo biến động số dư -->
-        <service
-            android:name=".capture.BankNotificationListener"
-            android:label="Sổ Thu Chi - ghi chép tự động"
-            android:exported="true"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            android:windowSoftInputMode="adjustResize|stateHidden">
             <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
             </intent-filter>
-        </service>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
 
         <meta-data
             android:name="flutterEmbedding"
@@ -77,28 +77,5 @@
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
-        <!-- Kiểm tra ứng dụng ngân hàng đã cài -->
-        <package android:name="com.mbmobile" />
-        <package android:name="com.VCB" />
-        <package android:name="vn.com.techcombank.bb.app" />
-        <package android:name="com.vnpay.bidv" />
-        <package android:name="com.vietinbank.ipay" />
-        <package android:name="com.vnpay.Agribank3g" />
-        <package android:name="mobile.acb.com.vn" />
-        <package android:name="com.tpb.mb.gprsandroid" />
-        <package android:name="com.vnpay.vpbankonline" />
-        <package android:name="com.sacombank.ewallet" />
-        <package android:name="com.vib.myvib2" />
-        <package android:name="com.vnpay.hdbank" />
-        <package android:name="vn.com.msb.smartBanking" />
-        <package android:name="vn.shb.mbanking" />
-        <package android:name="vn.com.seabank.mb1" />
-        <package android:name="vn.com.ocb.awe" />
-        <package android:name="vn.com.lpb.lienviet24h" />
-        <package android:name="io.lifestyle.plus" />
-        <package android:name="xyz.be.cake" />
-        <package android:name="com.mservice.momotransfer" />
-        <package android:name="vn.com.vng.zalopay" />
-        <package android:name="com.bplus.vtpay" />
     </queries>
 </manifest>

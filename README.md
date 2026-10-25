@@ -18,9 +18,16 @@
 - Ghi nhanh bằng giọng nói kèm số tiền: "ăn trưa 50 nghìn", "đổ xăng 1tr2", "tiền điện 1 triệu 250 nghìn".
 - Dán SMS/thông báo ngân hàng để ghi.
 
-## Android – tự động ghi chép
+## Android – hai bản cài
 
-Trong app: **Khác → Tự động ghi chép**, bật:
+| Bản | Tệp | Ghi giao dịch sau chuyển khoản | Cài đặt |
+|---|---|---|---|
+| **Tiêu chuẩn** (khuyên dùng) | `SoThuChi-x.y.z.apk` | Ở màn "Chuyển khoản thành công" bấm **Chia sẻ** biên lai → **Ghi vào Sổ Thu Chi**: app đọc số tiền trên biên lai (OCR trên máy), cửa sổ ghi nhanh hiện ngay với micro chờ sẵn | Cài bình thường |
+| **Đầy đủ** | `SoThuChi-x.y.z-full.apk` | Tự đọc thông báo biến động số dư, cửa sổ tự bật không cần bấm gì | Play Protect chặn khi mở tệp từ trình duyệt/Zalo/trình quản lý tệp (quyền đọc thông báo) → cài bằng `adb install` hoặc tạm tắt "Quét ứng dụng bằng Play Protect" |
+
+Hai bản cùng mã ứng dụng và khoá ký nên cài đè qua lại vẫn giữ dữ liệu.
+
+Bản đầy đủ – trong app: **Khác → Tự động ghi chép**, bật:
 - *Đọc thông báo* (Notification access),
 - *Hiển thị trên ứng dụng khác* (để cửa sổ hiện trên app ngân hàng),
 - *Micro*, *Gửi thông báo*.
@@ -42,7 +49,7 @@ và micro chờ. Ngoài ra có thể dán nội dung thông báo hoặc nói đ�
 ```bash
 flutter pub get
 flutter test
-flutter build apk --release
+flutter build apk --release --flavor standard   # hoặc --flavor full
 flutter build ios --release --no-codesign   # trên macOS
 ```
 
@@ -56,6 +63,7 @@ IPA chưa ký: cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple 
 
 - `lib/capture/bank_parser.dart` + `android/.../capture/BankParser.kt`: bộ phân tích thông báo (2 bản dùng chung
   mẫu thử `test/fixtures/bank_notifications.json`).
-- `android/.../capture/BankNotificationListener.kt`: đọc thông báo; `CapturePresenter.kt`: thẻ nổi + mở cửa sổ;
+- `android/app/src/full/.../BankNotificationListener.kt` (chỉ bản đầy đủ): đọc thông báo; `CapturePresenter.kt`: thẻ nổi + mở cửa sổ;
+- `ReceiptParser.kt` / `ReceiptOcr.kt`: đọc số tiền trên ảnh biên lai được chia sẻ;
   `QuickAddActivity.kt`: cửa sổ Flutter trong suốt (điểm vào `quickAddMain`).
 - `lib/ui/quick_add/`: giao diện ghi nhanh + giọng nói.

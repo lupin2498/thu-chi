@@ -98,9 +98,21 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     ],
                     if (CaptureChannel.supported &&
                         _perm != null &&
-                        !_perm!.ready) ...[
+                        (_perm!.notificationCapture
+                            ? !_perm!.ready
+                            : !state.settings.onboardedCapture)) ...[
                       _SetupCaptureCard(
+                        title: _perm!.notificationCapture
+                            ? 'Bật tự động ghi chép'
+                            : 'Ghi nhanh sau chuyển khoản',
+                        subtitle: _perm!.notificationCapture
+                            ? 'Chuyển khoản xong trên MB Bank... là cửa sổ ghi chép hiện ra với số tiền sẵn, chỉ cần nói tên khoản chi.'
+                            : 'Chuyển khoản xong, bấm "Chia sẻ" biên lai → "Ghi vào Sổ Thu Chi": số tiền điền sẵn, chỉ cần nói tên khoản chi.',
                         onTap: () async {
+                          if (!_perm!.notificationCapture) {
+                            await state.settings.setOnboardedCapture(true);
+                          }
+                          if (!context.mounted) return;
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -368,8 +380,14 @@ class _PendingCard extends StatelessWidget {
 }
 
 class _SetupCaptureCard extends StatelessWidget {
-  const _SetupCaptureCard({required this.onTap});
+  const _SetupCaptureCard({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
+  final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
   @override
@@ -381,14 +399,14 @@ class _SetupCaptureCard extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Icon(Icons.bolt, color: scheme.onPrimaryContainer, size: 32),
         title: Text(
-          'Bật tự động ghi chép',
+          title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: scheme.onPrimaryContainer,
           ),
         ),
         subtitle: Text(
-          'Chuyển khoản xong trên MB Bank... là cửa sổ ghi chép hiện ra với số tiền sẵn, chỉ cần nói tên khoản chi.',
+          subtitle,
           style: TextStyle(color: scheme.onPrimaryContainer),
         ),
         trailing: Icon(Icons.chevron_right, color: scheme.onPrimaryContainer),
