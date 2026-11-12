@@ -45,8 +45,14 @@ object CaptureProcessor {
             .put("balance", r.balance ?: JSONObject.NULL)
             .put("time", if (postTime > 0) postTime else now)
         if (dedupe) {
-            val sig = CaptureDedupe.signature(r, packageName, title, text, notificationKey)
-            val match = CaptureStore.checkDuplicate(ctx, sig, id, now, crossCheck = settings.dedupe)
+            // Lỗi ở bước lọc trùng không được làm mất giao dịch: khi đó cứ ghi nhận như bình thường.
+            val match = try {
+                val sig = CaptureDedupe.signature(r, packageName, title, text, notificationKey)
+                CaptureStore.checkDuplicate(ctx, sig, id, now, crossCheck = settings.dedupe)
+            } catch (e: Exception) {
+                Log.w(TAG, "Lỗi khi lọc trùng, vẫn ghi nhận giao dịch", e)
+                null
+            }
             if (match != null) {
                 Log.d(TAG, "Bỏ qua thông báo trùng ${r.amount} (${match.reason.key}) từ $packageName")
                 // Thông báo đăng lại y nguyên không cần giữ; trùng do kênh khác báo lại thì lưu để xem lại được.

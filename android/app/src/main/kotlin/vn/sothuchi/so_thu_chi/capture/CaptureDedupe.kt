@@ -125,6 +125,7 @@ object CaptureDedupe {
     // ------------------------------------------------------------ Chuẩn hoá
 
     private val combining = Regex("[\\u0300-\\u036f]")
+    private val validClock = Regex("^([01]\\d|2[0-3]):[0-5]\\d$")
     private val clock = Regex("(?<![\\d:])([01]?\\d|2[0-3]):([0-5]\\d)(?::[0-5]\\d)?(?![\\d:])")
 
     /** Từ chỉ hành động chuyển/trả tiền, không giúp phân biệt giao dịch này với giao dịch khác. */
@@ -454,7 +455,7 @@ object CaptureDedupe {
                             }
                         }
                     },
-                    clocks = o.optJSONArray("clocks").strings(),
+                    clocks = o.optJSONArray("clocks").strings().filter { validClock.matches(it) },
                     sources = o.optJSONArray("sources").strings(),
                     bankApp = if (o.isNull("bankApp")) null else o.optString("bankApp").ifEmpty { null },
                     bank = if (o.isNull("bank")) null else o.optString("bank").ifEmpty { null },

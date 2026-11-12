@@ -444,6 +444,13 @@ class CaptureDedupeTest {
         assertTrue(CaptureDedupe.decode("{\"a\":1}").isEmpty())
         // Mục hỏng bị bỏ, mục còn lại vẫn đọc được.
         assertEquals(1, CaptureDedupe.decode("[1, {\"x\":2}, {\"id\":\"k\",\"amount\":5,\"t\":7}]").size)
+        // Giờ GD lưu sai định dạng bị bỏ, không làm lỗi khi so khớp.
+        val bad = CaptureDedupe.decode(
+            "[{\"id\":\"k\",\"amount\":150000,\"t\":$t0,\"last\":$t0,\"clocks\":[\"ab\",\"9:5\",\"10:00\"]}]",
+        )
+        assertEquals(listOf("10:00"), bad.single().clocks)
+        val out = CaptureDedupe.check(bad, sig(gmail, "MB Bank", "GD: -150,000 VND lúc 10:01", strict = true), "x", t0 + min)
+        assertEquals(Reason.CLOCK, out.match?.reason)
     }
 
     @Test
