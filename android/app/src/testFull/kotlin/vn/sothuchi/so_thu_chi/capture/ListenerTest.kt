@@ -104,4 +104,49 @@ class ListenerTest {
         assertEquals(2, CaptureStore.pending(app).size)
     }
 
+    @Test
+    fun gmailRepeatOfBankNotificationIsFiltered() {
+        val service = Robolectric.setupService(BankNotificationListener::class.java)
+        val mail = "Thông báo biến động số dư\nKính gửi Quý khách, tài khoản 0xxx6789 vừa phát sinh giao dịch: " +
+            "-150,000 VND. Nội dung: NGUYEN VAN A chuyen tien"
+
+        // Chưa bật "Mọi ứng dụng": thông báo Gmail không được đọc.
+        service.onNotificationPosted(sbn("com.google.android.gm", "MB Bank", mail))
+        assertTrue(CaptureStore.pending(app).isEmpty())
+
+        CaptureStore.saveSettings(app, CaptureStore.Settings(anyApp = true))
+        service.onNotificationPosted(sbn("com.mbmobile", mbTitle, mbText))
+        assertEquals(1, CaptureStore.pending(app).size)
+        assertEquals(1, notifications().size)
+
+        // Ngân hàng báo xong, Gmail báo lại cùng số tiền + nội dung -> không ghi nhận lần nữa.
+        service.onNotificationPosted(sbn("com.google.android.gm", "MB Bank", mail))
+        assertEquals(1, CaptureStore.pending(app).size)
+        assertEquals(1, notifications().size)
+        val filtered = CaptureStore.filtered(app)
+        assertEquals(1, filtered.size)
+        assertEquals("content", filtered[0].getString("dupReason"))
+        assertEquals("com.mbmobile", filtered[0].getString("dupOfPackage"))
+
+        // Gmail đăng lại đúng thông báo đó (gộp thư) -> vẫn bỏ, không thêm vào danh sách đã lọc.
+        service.onNotificationPosted(sbn("com.google.android.gm", "MB Bank", mail))
+        assertEquals(1, CaptureStore.pending(app).size)
+        assertEquals(1, CaptureStore.filtered(app).size)
+
+        // Giao dịch khác (số tiền khác) qua Gmail vẫn được ghi.
+        service.onNotificationPosted(
+            sbn("com.google.android.gm", "MB Bank", mail.replace("-150,000", "-275,000")),
+        )
+        assertEquals(2, CaptureStore.pending(app).size)
+
+        // Tắt lọc trùng: thư báo lại của giao dịch mới được giữ.
+        CaptureStore.saveSettings(app, CaptureStore.Settings(anyApp = true, dedupe = false))
+        service.onNotificationPosted(
+            sbn("com.mbmobile", mbTitle, "TK 0xxx6789|GD: -99,000VND 22/10/26 17:00 |SD: 1,000VND|ND: tien nuoc"),
+        )
+        service.onNotificationPosted(
+            sbn("com.google.android.gm", "MB Bank", "Giao dịch: -99,000 VND. Nội dung: tien nuoc"),
+        )
+        assertEquals(4, CaptureStore.pending(app).size)
+    }
 }

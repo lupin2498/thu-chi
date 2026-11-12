@@ -14,6 +14,8 @@ object BankParser {
         val balance: Long?,
         val bankKey: String?,
         val score: Int,
+        /** Chiều thu/chi đọc được từ dấu +/- hoặc từ khoá (false = mặc định là chi). */
+        val directionKnown: Boolean = true,
     )
 
     private class Candidate(
@@ -159,7 +161,7 @@ object BankParser {
             if (!best.hasCurrency && !best.hasGrouping) return null
         }
 
-        val isIncome = direction(best, folded)
+        val (isIncome, directionKnown) = direction(best, folded)
         var balance: Long? = candidates.firstOrNull { it.isBalance && it.start > best.start }?.value
         if (balance == null) balance = candidates.firstOrNull { it.isBalance }?.value
 
@@ -168,16 +170,19 @@ object BankParser {
             isIncome = isIncome,
             content = extractContent(original, folded),
             balance = balance,
-            bankKey = BankApps.byPackage(packageName)?.key ?: detectBankKey(folded),
+            bankKey = BankApps.byPackage(packageName)?.key ?: detectBank(title, folded),
             score = best.score,
+            directionKnown = directionKnown,
         )
     }
 
-    private fun direction(best: Candidate, folded: String): Boolean {
-        if (best.sign < 0) return false
-        if (best.sign > 0) return true
+    /** (là khoản thu?, có đọc được chiều thu/chi rõ ràng không). */
+    private fun direction(best: Candidate, folded: String): Pair<Boolean, Boolean> {
+        if (best.sign < 0) return false to true
+        if (best.sign > 0) return true to true
+        val none = 1 shl 30
         fun nearest(words: List<String>): Int {
-            var bestDist = 1 shl 30
+            var bestDist = none
             for (w in words) {
                 var idx = folded.indexOf(w)
                 while (idx >= 0) {
@@ -188,7 +193,9 @@ object BankParser {
             }
             return bestDist
         }
-        return nearest(incomeWords) < nearest(expenseWords)
+        val inc = nearest(incomeWords)
+        val exp = nearest(expenseWords)
+        return (inc < exp) to (inc != none || exp != none)
     }
 
     private fun segmentPrefix(folded: String, index: Int): String {
@@ -229,6 +236,15 @@ object BankParser {
         if (content.isEmpty()) return null
         if (content.length > 140) content = content.substring(0, 140) + "…"
         return content
+    }
+
+    /** Ưu tiên người gửi (tiêu đề SMS / email) rồi mới tới nội dung, vì nội dung có thể nhắc ngân hàng nhận. */
+    private fun detectBank(title: String?, folded: String): String? {
+        val sender = title?.trim().orEmpty()
+        if (sender.isNotEmpty()) {
+            detectBankKey(fold(sender.replace(combining, "")))?.let { return it }
+        }
+        return detectBankKey(folded)
     }
 
     internal fun detectBankKey(folded: String): String? {

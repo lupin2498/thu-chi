@@ -91,3 +91,20 @@ BankApp? bankByPackage(String? package) {
   }
   return null;
 }
+
+/// Tên hiển thị của kênh đã gửi thông báo (app ngân hàng, tin nhắn, email...).
+String sourceLabel(String? package) {
+  if (package == null || package.isEmpty) return 'Ứng dụng khác';
+  final bank = bankByPackage(package);
+  if (bank != null) return bank.name;
+  if (kSmsPackages.contains(package)) return 'Tin nhắn SMS';
+  const known = {
+    'com.google.android.gm': 'Gmail',
+    'com.google.android.gm.lite': 'Gmail',
+    'com.microsoft.office.outlook': 'Outlook',
+    'com.samsung.android.email.provider': 'Email',
+    'com.yahoo.mobile.client.android.mail': 'Yahoo Mail',
+    'com.zing.zalo': 'Zalo',
+  };
+  return known[package] ?? package;
+}

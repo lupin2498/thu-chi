@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Looper
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -28,6 +29,14 @@ class CaptureFlowTest {
 
     private val mbTitle = "Thông báo biến động số dư"
     private val mbText = "TK 0xxx6789|GD: -150,000VND 22/10/26 16:30 |SD: 2,345,678VND|ND: NGUYEN VAN A chuyen tien"
+
+    /** Gmail báo lại cùng giao dịch: tiêu đề = người gửi, nội dung = tiêu đề thư + trích đoạn. */
+    private val gmail = "com.google.android.gm"
+    private val mailSender = "MB Bank"
+    private val mailText = "Thông báo biến động số dư\nKính gửi Quý khách, tài khoản 0xxx6789 vừa phát sinh giao dịch: " +
+        "-150,000 VND. Nội dung: NGUYEN VAN A chuyen tien"
+
+    private val prefs get() = app.getSharedPreferences("sothuchi_capture", Context.MODE_PRIVATE)
 
     @Before
     fun reset() {
@@ -92,6 +101,135 @@ class CaptureFlowTest {
     }
 
     @Test
+    fun gmailRepeatAfterBankIsFilteredAndRestorable() {
+        val t = System.currentTimeMillis()
+        val first = CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false, now = t)
+        val firstId = (first as CaptureProcessor.Outcome.Captured).id
+        // 5 phút sau Gmail báo lại: cùng số tiền, cùng nội dung.
+        assertEquals(
+            CaptureProcessor.Outcome.Duplicate,
+            CaptureProcessor.process(app, gmail, mailSender, mailText, strict = true, present = false, now = t + 5 * 60_000),
+        )
+        assertEquals(1, CaptureStore.pending(app).size)
+
+        val filtered = CaptureStore.filtered(app)
+        assertEquals(1, filtered.size)
+        val m = CaptureStore.filteredToMap(filtered[0])
+        assertEquals(150000L, m["amount"])
+        assertEquals(gmail, m["packageName"])
+        assertEquals("content", m["reason"])
+        assertEquals(firstId, m["originalId"])
+        assertEquals("com.mbmobile", m["originalPackage"])
+        assertEquals(t, m["originalTime"])
+
+        // Lọc nhầm -> đưa lại vào danh sách chờ ghi, bỏ phần ghi chú "trùng với...".
+        val id = m["id"] as String
+        val restored = CaptureStore.restoreFiltered(app, id)
+        assertNotNull(restored)
+        assertFalse(restored!!.has("dupReason"))
+        assertFalse(restored.has("dupOfId"))
+        assertEquals(2, CaptureStore.pending(app).size)
+        assertNotNull(CaptureStore.get(app, id))
+        assertTrue(CaptureStore.filtered(app).isEmpty())
+        assertNull(CaptureStore.restoreFiltered(app, id))
+        assertNull(CaptureStore.restoreFiltered(app, null))
+    }
+
+    @Test
+    fun gmailRepeatHoursLaterStillFiltered() {
+        val t = System.currentTimeMillis()
+        CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false, now = t)
+        assertEquals(
+            CaptureProcessor.Outcome.Duplicate,
+            CaptureProcessor.process(app, gmail, mailSender, mailText, strict = true, present = false, now = t + 6 * 3_600_000L),
+        )
+        // Hôm sau có giao dịch mới cùng số tiền, cùng nội dung -> thư của nó không bị coi là trùng với hôm trước.
+        assertTrue(
+            CaptureProcessor.process(
+                app, gmail, mailSender, mailText, strict = true, present = false, now = t + 26 * 3_600_000L,
+            ) is CaptureProcessor.Outcome.Captured,
+        )
+        assertEquals(2, CaptureStore.pending(app).size)
+    }
+
+    @Test
+    fun repostedNotificationIsDroppedSilently() {
+        CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false)
+        assertEquals(
+            CaptureProcessor.Outcome.Duplicate,
+            CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false),
+        )
+        // Thông báo đăng lại y nguyên không đưa vào danh sách "đã lọc".
+        assertTrue(CaptureStore.filtered(app).isEmpty())
+        assertEquals(1, CaptureStore.pending(app).size)
+    }
+
+    @Test
+    fun filterTurnedOffKeepsOtherChannels() {
+        CaptureStore.saveSettings(app, CaptureStore.Settings(dedupe = false))
+        val t = System.currentTimeMillis()
+        CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false, now = t)
+        assertTrue(
+            CaptureProcessor.process(
+                app, gmail, mailSender, mailText, strict = true, present = false, now = t + 60_000,
+            ) is CaptureProcessor.Outcome.Captured,
+        )
+        assertEquals(2, CaptureStore.pending(app).size)
+        assertTrue(CaptureStore.filtered(app).isEmpty())
+        // Đúng thông báo đó được đăng lại thì vẫn bỏ.
+        assertEquals(
+            CaptureProcessor.Outcome.Duplicate,
+            CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false, now = t + 120_000),
+        )
+    }
+
+    @Test
+    fun duplicateDoesNotOpenPopupOrNotify() {
+        ShadowSettings.setCanDrawOverlays(true)
+        val t = System.currentTimeMillis()
+        val r = CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, now = t)
+        idle(400)
+        assertNotNull(shadowOf(app).nextStartedActivity)
+        CapturePresenter.onPopupShown(app, (r as CaptureProcessor.Outcome.Captured).id)
+        assertEquals(
+            CaptureProcessor.Outcome.Duplicate,
+            CaptureProcessor.process(app, gmail, mailSender, mailText, strict = true, now = t + 60_000),
+        )
+        idle(4000)
+        assertNull(shadowOf(app).nextStartedActivity)
+        assertTrue(notifications().isEmpty())
+    }
+
+    @Test
+    fun filteredListIsCapped() {
+        repeat(25) { CaptureStore.addFiltered(app, JSONObject().put("id", "f$it").put("amount", 1000 + it)) }
+        val list = CaptureStore.filtered(app)
+        assertEquals(20, list.size)
+        assertEquals("f5", list.first().getString("id"))
+        assertEquals("f24", list.last().getString("id"))
+        CaptureStore.clearFiltered(app)
+        assertTrue(CaptureStore.filtered(app).isEmpty())
+    }
+
+    @Test
+    fun oldAndCorruptedStoresAreHandled() {
+        // Dấu vết chống trùng của bản 1.0.x bị xoá; dữ liệu hỏng không làm sập dịch vụ.
+        prefs.edit()
+            .putString("recent_keys", "[{\"t\":1,\"amount\":\"150000|false\",\"text\":\"1\",\"src\":\"x\"}]")
+            .putString("seen_v2", "###")
+            .putString("filtered", "{")
+            .putString("pending", "không phải json")
+            .commit()
+        assertTrue(CaptureStore.filtered(app).isEmpty())
+        assertTrue(CaptureStore.pending(app).isEmpty())
+        val r = CaptureProcessor.process(app, "com.mbmobile", mbTitle, mbText, strict = false, present = false)
+        assertTrue(r is CaptureProcessor.Outcome.Captured)
+        assertEquals(1, CaptureStore.pending(app).size)
+        assertFalse(prefs.contains("recent_keys"))
+        assertTrue(prefs.getString("seen_v2", "")!!.startsWith("["))
+    }
+
+    @Test
     fun disabledSettingsIgnoresEverything() {
         CaptureStore.saveSettings(app, CaptureStore.Settings(enabled = false))
         assertEquals(
@@ -105,11 +243,15 @@ class CaptureFlowTest {
     fun settingsRoundTrip() {
         val s = CaptureStore.Settings(
             enabled = true, disabledBanks = setOf("vcb"), readSms = false, anyApp = true,
-            extraPackages = listOf("a.b"), showPopup = false,
+            extraPackages = listOf("a.b"), showPopup = false, dedupe = false,
         )
         CaptureStore.saveSettings(app, s)
         assertEquals(s, CaptureStore.settings(app))
         assertEquals(s, CaptureStore.Settings.fromMap(s.toMap()))
+        // Cài đặt lưu từ bản cũ (chưa có "dedupe") -> mặc định bật lọc trùng.
+        prefs.edit().putString("settings", "{\"enabled\":true,\"anyApp\":true}").commit()
+        assertTrue(CaptureStore.settings(app).dedupe)
+        assertTrue(CaptureStore.Settings.fromMap(mapOf("enabled" to true)).dedupe)
     }
 
     @Test

@@ -72,6 +72,44 @@ class CaptureData {
   }
 }
 
+/// Một thông báo đã bị lọc vì trùng với giao dịch ghi nhận trước đó.
+@immutable
+class FilteredCapture {
+  const FilteredCapture({
+    required this.capture,
+    required this.reason,
+    this.originalTime,
+    this.originalPackage,
+  });
+
+  final CaptureData capture;
+
+  /// "balance" | "content" | "clock" | "time" (xem CaptureDedupe.kt).
+  final String reason;
+
+  /// Thời điểm và kênh đã báo giao dịch gốc.
+  final DateTime? originalTime;
+  final String? originalPackage;
+
+  /// Vì sao coi là trùng (hiển thị cho người dùng).
+  String get reasonLabel => switch (reason) {
+    'balance' => 'cùng số tiền và số dư sau giao dịch',
+    'content' => 'cùng số tiền và nội dung',
+    'clock' => 'cùng số tiền và giờ giao dịch',
+    _ => 'cùng số tiền, báo sát nhau',
+  };
+
+  factory FilteredCapture.fromMap(Map<Object?, Object?> m) {
+    final t = (m['originalTime'] as num?)?.toInt();
+    return FilteredCapture(
+      capture: CaptureData.fromMap(m),
+      reason: (m['reason'] ?? '').toString(),
+      originalTime: t == null ? null : DateTime.fromMillisecondsSinceEpoch(t),
+      originalPackage: m['originalPackage'] as String?,
+    );
+  }
+}
+
 @immutable
 class CapturePermissions {
   const CapturePermissions({
@@ -110,6 +148,7 @@ class CaptureSettings {
     this.anyApp = false,
     this.extraPackages = const [],
     this.showPopup = true,
+    this.dedupe = true,
   });
 
   final bool enabled;
@@ -125,6 +164,10 @@ class CaptureSettings {
   /// Bật cửa sổ ghi nhanh ngay (nếu tắt chỉ hiện thông báo).
   final bool showPopup;
 
+  /// Lọc thông báo trùng: kênh khác (Gmail, SMS...) báo lại cùng số tiền và
+  /// nội dung thì chỉ ghi một lần.
+  final bool dedupe;
+
   CaptureSettings copyWith({
     bool? enabled,
     Set<String>? disabledBanks,
@@ -132,6 +175,7 @@ class CaptureSettings {
     bool? anyApp,
     List<String>? extraPackages,
     bool? showPopup,
+    bool? dedupe,
   }) => CaptureSettings(
     enabled: enabled ?? this.enabled,
     disabledBanks: disabledBanks ?? this.disabledBanks,
@@ -139,6 +183,7 @@ class CaptureSettings {
     anyApp: anyApp ?? this.anyApp,
     extraPackages: extraPackages ?? this.extraPackages,
     showPopup: showPopup ?? this.showPopup,
+    dedupe: dedupe ?? this.dedupe,
   );
 
   Map<String, Object?> toMap() => {
@@ -148,6 +193,7 @@ class CaptureSettings {
     'anyApp': anyApp,
     'extraPackages': extraPackages,
     'showPopup': showPopup,
+    'dedupe': dedupe,
   };
 
   factory CaptureSettings.fromMap(Map<Object?, Object?> m) => CaptureSettings(
@@ -161,6 +207,7 @@ class CaptureSettings {
         .map((e) => e.toString())
         .toList(),
     showPopup: m['showPopup'] != false,
+    dedupe: m['dedupe'] != false,
   );
 }
 
@@ -255,6 +302,29 @@ class CaptureChannel {
       _invoke<void>('removeCapture', {'id': id});
 
   static Future<void> clearAll() => _invoke<void>('clearCaptures');
+
+  /// Thông báo vừa bị lọc vì trùng (mới nhất trước).
+  static Future<List<FilteredCapture>> filtered() async {
+    final list = await _invoke<List<Object?>>('getFilteredCaptures');
+    if (list == null) return const [];
+    return list
+        .whereType<Map<Object?, Object?>>()
+        .map(FilteredCapture.fromMap)
+        .where((f) => f.capture.amount > 0)
+        .toList()
+        .reversed
+        .toList();
+  }
+
+  /// Lọc nhầm: đưa thông báo trở lại danh sách chờ ghi.
+  static Future<CaptureData?> restoreFiltered(String id) async {
+    final m = await _invoke<Map<Object?, Object?>>('restoreFiltered', {
+      'id': id,
+    });
+    return m == null ? null : CaptureData.fromMap(m);
+  }
+
+  static Future<void> clearFiltered() => _invoke<void>('clearFiltered');
 
   /// Giao dịch đã mở cửa sổ ghi nhanh (chỉ trong cửa sổ popup).
   static Future<CaptureData?> launchCapture() async {

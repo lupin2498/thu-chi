@@ -38,6 +38,18 @@ Bản đầy đủ – trong app: **Khác → Tự động ghi chép**, bật:
 Có nút **Giả lập thông báo** để thử toàn bộ luồng mà không cần chuyển khoản thật.
 Mọi xử lý diễn ra trên máy, không gửi dữ liệu ra ngoài.
 
+### Lọc thông báo trùng
+
+Một giao dịch thường được báo nhiều lần: app ngân hàng báo xong, Gmail / SMS báo lại. Bản đầy đủ chỉ ghi nhận
+lần đầu, các lần báo lại bị lọc bỏ (bật/tắt ở **Tự động ghi chép → Tuỳ chọn → Lọc thông báo trùng**):
+
+- So theo **số tiền + nội dung chuyển khoản**; khi thông báo có thì dùng thêm **số dư sau giao dịch** và **giờ giao dịch**
+  (trong 12 giờ). Nội dung không cần giống hệt: bỏ dấu, bỏ mã tham chiếu, chấp nhận trích đoạn email bị cắt.
+- Thiếu cả nội dung, số dư, giờ: chỉ coi là trùng khi kênh khác báo cùng số tiền sát nhau (10 phút nếu cùng ngân hàng, 2 phút nếu không rõ).
+- Mỗi kênh chỉ báo một giao dịch một lần, nên **hai lần chuyển cùng số tiền, cùng nội dung trên cùng một app vẫn được ghi đủ**;
+  hai chân của một lần chuyển giữa hai tài khoản của mình (một trừ, một cộng) cũng không bị gộp.
+- Thông báo đã lọc nằm ở mục **Thông báo trùng đã lọc** kèm lý do; bấm **Vẫn ghi** nếu lọc nhầm.
+
 ## iPhone
 
 iOS không cho đọc thông báo của app khác. Dùng **Phím tắt → Tự động hoá → Tin nhắn** (SMS từ ngân hàng)
@@ -64,6 +76,7 @@ IPA chưa ký: cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple 
 - `lib/capture/bank_parser.dart` + `android/.../capture/BankParser.kt`: bộ phân tích thông báo (2 bản dùng chung
   mẫu thử `test/fixtures/bank_notifications.json`).
 - `android/app/src/full/.../BankNotificationListener.kt` (chỉ bản đầy đủ): đọc thông báo; `CapturePresenter.kt`: thẻ nổi + mở cửa sổ;
+- `CaptureDedupe.kt`: lọc thông báo trùng (thuần Kotlin, test trong `CaptureDedupeTest.kt`);
 - `ReceiptParser.kt` / `ReceiptOcr.kt`: đọc số tiền trên ảnh biên lai được chia sẻ;
   `QuickAddActivity.kt`: cửa sổ Flutter trong suốt (điểm vào `quickAddMain`).
 - `lib/ui/quick_add/`: giao diện ghi nhanh + giọng nói.

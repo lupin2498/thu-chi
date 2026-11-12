@@ -59,6 +59,9 @@ class BankParserTest {
             if (e.has("contentContains") && r.content?.contains(e.getString("contentContains")) != true) {
                 failures.add("$name: content '${r.content}' thiếu '${e.getString("contentContains")}'")
             }
+            if (e.has("directionKnown") && r.directionKnown != e.getBoolean("directionKnown")) {
+                failures.add("$name: directionKnown ${r.directionKnown} != ${e.getBoolean("directionKnown")}")
+            }
         }
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }

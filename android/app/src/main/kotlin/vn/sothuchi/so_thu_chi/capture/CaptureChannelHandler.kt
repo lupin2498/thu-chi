@@ -108,6 +108,16 @@ class CaptureChannelHandler(
                     CapturePresenter.cancelAll(ctx, ids)
                     result.success(null)
                 }
+                "getFilteredCaptures" ->
+                    result.success(CaptureStore.filtered(ctx).map { CaptureStore.filteredToMap(it) })
+                "restoreFiltered" -> {
+                    val restored = CaptureStore.restoreFiltered(ctx, call.argument<String>("id"))
+                    result.success(restored?.let { CaptureStore.toMap(it) })
+                }
+                "clearFiltered" -> {
+                    CaptureStore.clearFiltered(ctx)
+                    result.success(null)
+                }
                 "getLaunchCapture" -> {
                     val p = popup
                     if (p == null) result.success(null) else p.launchCapture { result.success(it) }

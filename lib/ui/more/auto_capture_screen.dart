@@ -5,8 +5,11 @@ import '../../capture/bank_apps.dart';
 import '../../capture/bank_parser.dart';
 import '../../capture/capture_channel.dart';
 import '../../core/format.dart';
+import '../../data/models.dart';
 import '../../state/app_state.dart';
+import '../quick_add/quick_add_panel.dart';
 import '../theme.dart';
+import '../widgets/app_icons.dart';
 import '../widgets/common.dart';
 
 const String kSampleMbNotification =
@@ -25,6 +28,7 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
   CapturePermissions _perm = const CapturePermissions();
   CaptureSettings _settings = const CaptureSettings();
   Set<String> _installed = const {};
+  List<FilteredCapture> _filtered = const [];
   bool _loading = true;
   final _testCtrl = TextEditingController(text: kSampleMbNotification);
   String? _testResult;
@@ -53,13 +57,35 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
     final p = await CaptureChannel.permissions();
     final s = await CaptureChannel.settings();
     final inst = await CaptureChannel.installedPackages();
+    final filtered = await CaptureChannel.filtered();
     if (!mounted) return;
     setState(() {
       _perm = p;
       _settings = s;
       _installed = inst;
+      _filtered = filtered;
       _loading = false;
     });
+  }
+
+  /// Lọc nhầm: đưa thông báo về danh sách chờ rồi mở cửa sổ ghi nhanh.
+  Future<void> _restoreFiltered(FilteredCapture f) async {
+    final state = context.read<AppState>();
+    final c = await CaptureChannel.restoreFiltered(f.capture.id);
+    await state.refreshPending();
+    if (!mounted) return;
+    if (c == null) {
+      showSnack(context, 'Thông báo này không còn trong danh sách');
+    } else {
+      await showQuickAddSheet(context, capture: c);
+      await state.refreshPending();
+    }
+    if (mounted) await _load();
+  }
+
+  Future<void> _clearFiltered() async {
+    await CaptureChannel.clearFiltered();
+    if (mounted) setState(() => _filtered = const []);
   }
 
   Future<void> _update(CaptureSettings s) async {
@@ -236,6 +262,16 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                             ? (v) => _update(_settings.copyWith(anyApp: v))
                             : null,
                       ),
+                      SwitchListTile(
+                        title: const Text('Lọc thông báo trùng'),
+                        subtitle: const Text(
+                          'Ngân hàng báo xong, Gmail / SMS báo lại cùng số tiền và nội dung thì chỉ ghi một lần',
+                        ),
+                        value: _settings.dedupe,
+                        onChanged: _settings.enabled
+                            ? (v) => _update(_settings.copyWith(dedupe: v))
+                            : null,
+                      ),
                       Consumer<AppState>(
                         builder: (context, state, _) => SwitchListTile(
                           title: const Text('Tự bật micro khi mở cửa sổ'),
@@ -256,6 +292,14 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                     ],
                   ),
                 ),
+                if (_filtered.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _FilteredCard(
+                    filtered: _filtered,
+                    onRestore: _restoreFiltered,
+                    onClear: _clearFiltered,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 SectionCard(
                   title: 'Ngân hàng & ví',
@@ -336,6 +380,69 @@ class _AutoCaptureScreenState extends State<AutoCaptureScreen>
                 ),
               ],
             ),
+    );
+  }
+}
+
+/// Các thông báo vừa bị lọc vì trùng: để người dùng biết bộ lọc đã làm gì và
+/// ghi lại được nếu lọc nhầm.
+class _FilteredCard extends StatelessWidget {
+  const _FilteredCard({
+    required this.filtered,
+    required this.onRestore,
+    required this.onClear,
+  });
+
+  final List<FilteredCapture> filtered;
+  final ValueChanged<FilteredCapture> onRestore;
+  final VoidCallback onClear;
+
+  static const _shown = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: 'Thông báo trùng đã lọc (${filtered.length})',
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      trailing: TextButton(
+        onPressed: onClear,
+        child: const Text('Xoá danh sách'),
+      ),
+      child: Column(
+        children: [
+          for (final f in filtered.take(_shown))
+            ListTile(
+              leading: IconBadge(
+                icon: 'bank',
+                color: f.capture.type == TxnType.income
+                    ? 0xFF2E7D32
+                    : 0xFFE53935,
+              ),
+              title: AmountText(f.capture.amount, type: f.capture.type),
+              subtitle: Text(
+                '${sourceLabel(f.capture.packageName)} · ${formatDateTime(f.capture.time)}\n'
+                'Trùng với ${sourceLabel(f.originalPackage)}'
+                '${f.originalTime != null ? ' lúc ${formatTime(f.originalTime!)}' : ''}'
+                ': ${f.reasonLabel}',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              isThreeLine: true,
+              trailing: TextButton(
+                onPressed: () => onRestore(f),
+                child: const Text('Vẫn ghi'),
+              ),
+            ),
+          if (filtered.length > _shown)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                'và ${filtered.length - _shown} thông báo cũ hơn',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

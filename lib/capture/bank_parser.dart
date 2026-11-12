@@ -11,6 +11,7 @@ class ParsedBankTxn {
     this.balance,
     this.bankKey,
     this.score = 0,
+    this.directionKnown = true,
   });
 
   /// Số tiền giao dịch (đồng, > 0).
@@ -26,6 +27,9 @@ class ParsedBankTxn {
   final int? balance;
   final String? bankKey;
   final int score;
+
+  /// Chiều thu/chi đọc được từ dấu +/- hoặc từ khoá (false = mặc định là chi).
+  final bool directionKnown;
 
   String? get bankName => bankByKey(bankKey)?.name;
 
@@ -258,7 +262,7 @@ class BankNotificationParser {
       if (!best.hasCurrency && !best.hasGrouping) return null;
     }
 
-    final type = _direction(best, folded);
+    final (type, directionKnown) = _direction(best, folded);
     int? balance;
     for (final c in candidates) {
       if (c.isBalance && c.start > best.start) {
@@ -273,17 +277,20 @@ class BankNotificationParser {
       type: type,
       content: _extractContent(original, folded),
       balance: balance,
-      bankKey: bankByPackage(packageName)?.key ?? _detectBankKey(folded),
+      bankKey: bankByPackage(packageName)?.key ?? _detectBank(title, folded),
       score: best.score,
+      directionKnown: directionKnown,
     );
   }
 
-  static TxnType _direction(_Candidate best, String folded) {
-    if (best.sign < 0) return TxnType.expense;
-    if (best.sign > 0) return TxnType.income;
+  /// (loại giao dịch, có đọc được chiều thu/chi rõ ràng không).
+  static (TxnType, bool) _direction(_Candidate best, String folded) {
+    if (best.sign < 0) return (TxnType.expense, true);
+    if (best.sign > 0) return (TxnType.income, true);
     // Không có dấu: xét từ khoá gần số tiền nhất (ưu tiên phía trước).
+    const none = 1 << 30;
     int nearest(List<String> words) {
-      var bestDist = 1 << 30;
+      var bestDist = none;
       for (final w in words) {
         var idx = folded.indexOf(w);
         while (idx >= 0) {
@@ -299,8 +306,8 @@ class BankNotificationParser {
 
     final inc = nearest(_incomeWords);
     final exp = nearest(_expenseWords);
-    if (inc < exp) return TxnType.income;
-    return TxnType.expense;
+    final known = inc != none || exp != none;
+    return (inc < exp ? TxnType.income : TxnType.expense, known);
   }
 
   /// Phần đứng trước vị trí [index] trong cùng một đoạn (ngăn bởi | hoặc xuống dòng).
@@ -345,6 +352,19 @@ class BankNotificationParser {
     if (content.isEmpty) return null;
     if (content.length > 140) content = '${content.substring(0, 140)}…';
     return content;
+  }
+
+  /// Ưu tiên người gửi (tiêu đề SMS / email) rồi mới tới nội dung, vì nội dung
+  /// có thể nhắc tên ngân hàng nhận.
+  static String? _detectBank(String? title, String folded) {
+    final sender = title?.trim() ?? '';
+    if (sender.isNotEmpty) {
+      final byTitle = _detectBankKey(
+        foldVietnamese(sender.replaceAll(RegExp('[\u0300-\u036f]'), '')),
+      );
+      if (byTitle != null) return byTitle;
+    }
+    return _detectBankKey(folded);
   }
 
   static String? _detectBankKey(String folded) {

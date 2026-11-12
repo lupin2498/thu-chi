@@ -2,7 +2,7 @@ name: so_thu_chi
 description: "Sổ thu chi cá nhân - tự ghi chép giao dịch ngân hàng bằng giọng nói"
 publish_to: 'none'
 
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ^3.13.5

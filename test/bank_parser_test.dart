@@ -38,6 +38,9 @@ void main() {
         if (expect_.containsKey('contentContains')) {
           expect(r.content, contains(expect_['contentContains']));
         }
+        if (expect_.containsKey('directionKnown')) {
+          expect(r.directionKnown, expect_['directionKnown']);
+        }
       });
     }
   });

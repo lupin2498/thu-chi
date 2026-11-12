@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:so_thu_chi/app.dart';
+import 'package:so_thu_chi/capture/bank_apps.dart';
 import 'package:so_thu_chi/capture/capture_channel.dart';
 import 'package:so_thu_chi/data/models.dart';
 import 'package:so_thu_chi/ui/more/accounts_screen.dart';
@@ -25,6 +26,7 @@ class FakeNative {
   };
   var settings = const CaptureSettings().toMap();
   final pending = <Map<String, Object?>>[];
+  final filtered = <Map<String, Object?>>[];
 
   Future<Object?> handle(MethodCall call) async {
     calls.add(call);
@@ -43,6 +45,18 @@ class FakeNative {
         return null;
       case 'clearCaptures':
         pending.clear();
+        return null;
+      case 'getFilteredCaptures':
+        return filtered;
+      case 'restoreFiltered':
+        final id = (call.arguments as Map)['id'];
+        final i = filtered.indexWhere((f) => f['id'] == id);
+        if (i < 0) return null;
+        final m = filtered.removeAt(i);
+        pending.add(m);
+        return m;
+      case 'clearFiltered':
+        filtered.clear();
         return null;
       case 'getInstalledBankPackages':
         return ['com.mbmobile'];
@@ -91,7 +105,7 @@ void main() {
   testWidgets('màn tự động ghi chép: cấp quyền, tuỳ chọn, giả lập', (
     tester,
   ) async {
-    setPhoneSize(tester, height: 2400);
+    setPhoneSize(tester, height: 2600);
     final state = await createState();
     await pushPage(tester, state, const AutoCaptureScreen());
     expect(find.text('1. Đọc thông báo'), findsOneWidget);
@@ -151,6 +165,162 @@ void main() {
       (c) => c.method == 'simulateNotification',
     );
     expect((sim.arguments as Map)['text'], kSampleMbNotification);
+  });
+
+  group('Lọc thông báo trùng', () {
+    Map<String, Object?> filteredMap(String id, int amount, String reason) => {
+      ...captureMap(id, amount),
+      'packageName': 'com.google.android.gm',
+      'content': 'NGUYEN VAN A chuyen tien an trua',
+      'time': DateTime(2026, 11, 12, 10, 2).millisecondsSinceEpoch,
+      'reason': reason,
+      'originalId': 'orig-$id',
+      'originalTime': DateTime(2026, 11, 12, 10, 1).millisecondsSinceEpoch,
+      'originalPackage': 'com.mbmobile',
+    };
+
+    testWidgets('bật/tắt trong Tuỳ chọn', (tester) async {
+      setPhoneSize(tester, height: 2600);
+      final state = await createState();
+      await pushPage(tester, state, const AutoCaptureScreen());
+      expect(find.text('Lọc thông báo trùng'), findsOneWidget);
+      // Chưa lọc gì thì không hiện danh sách.
+      expect(find.textContaining('Thông báo trùng đã lọc'), findsNothing);
+      await tester.tap(find.text('Lọc thông báo trùng'));
+      await tester.pumpAndSettle();
+      expect(native.settings['dedupe'], false);
+      await tester.tap(find.text('Lọc thông báo trùng'));
+      await tester.pumpAndSettle();
+      expect(native.settings['dedupe'], true);
+      // Tắt tự động ghi chép -> công tắc bị khoá.
+      await tester.tap(find.text('Bật tự động ghi chép'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lọc thông báo trùng'));
+      await tester.pumpAndSettle();
+      expect(native.settings['dedupe'], true);
+    });
+
+    testWidgets('danh sách đã lọc: xem lý do, "Vẫn ghi", xoá danh sách', (
+      tester,
+    ) async {
+      setPhoneSize(tester, height: 2800);
+      native.filtered.addAll([
+        filteredMap('f1', 150000, 'content'),
+        filteredMap('f2', 89000, 'balance'),
+      ]);
+      final state = await createState();
+      await pushPage(tester, state, const AutoCaptureScreen());
+      expect(find.text('Thông báo trùng đã lọc (2)'), findsOneWidget);
+      // Mới nhất (cuối danh sách native) hiện trước.
+      final amounts = tester
+          .widgetList<Text>(find.textContaining(' đ'))
+          .map((t) => t.data)
+          .where((t) => t == '-150.000 đ' || t == '-89.000 đ')
+          .toList();
+      expect(amounts, ['-89.000 đ', '-150.000 đ']);
+      expect(
+        find.textContaining(
+          'Trùng với MB Bank lúc 10:01: cùng số tiền và nội dung',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('cùng số tiền và số dư sau giao dịch'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Gmail · 10:02 12/11/2026'), findsNWidgets(2));
+
+      // Lọc nhầm -> "Vẫn ghi" mở cửa sổ ghi nhanh với số tiền sẵn.
+      await tester.tap(find.widgetWithText(TextButton, 'Vẫn ghi').last);
+      await tester.pumpAndSettle();
+      expect(native.methods, contains('restoreFiltered'));
+      expect(find.byKey(const Key('quick_amount')), findsOneWidget);
+      expect(find.text('150.000'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('quick_note')), 'Ăn trưa');
+      await tester.tap(find.byKey(const Key('quick_save')));
+      await tester.pumpAndSettle();
+      final t = (await state.repo.transactions()).single;
+      expect(t.amount, 150000);
+      expect(t.source, TxnSource.auto);
+      expect(native.pending, isEmpty);
+      expect(find.text('Thông báo trùng đã lọc (1)'), findsOneWidget);
+
+      await tester.tap(find.text('Xoá danh sách'));
+      await tester.pumpAndSettle();
+      expect(native.filtered, isEmpty);
+      expect(find.textContaining('Thông báo trùng đã lọc'), findsNothing);
+    });
+
+    testWidgets('"Vẫn ghi" rồi để sau -> nằm ở mục chờ ghi', (tester) async {
+      setPhoneSize(tester, height: 2800);
+      native.filtered.add(filteredMap('f1', 150000, 'time'));
+      final state = await createState();
+      await pushPage(tester, state, const AutoCaptureScreen());
+      expect(
+        find.textContaining('cùng số tiền, báo sát nhau'),
+        findsOneWidget,
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Vẫn ghi'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Để sau'));
+      await tester.pumpAndSettle();
+      expect(await state.repo.transactions(), isEmpty);
+      expect(state.pending.map((c) => c.id), ['f1']);
+      expect(find.textContaining('Thông báo trùng đã lọc'), findsNothing);
+    });
+
+    testWidgets('thông báo đã bị xoá khỏi danh sách ở nơi khác', (tester) async {
+      setPhoneSize(tester, height: 2800);
+      native.filtered.add(filteredMap('f1', 150000, 'content'));
+      final state = await createState();
+      await pushPage(tester, state, const AutoCaptureScreen());
+      native.filtered.clear();
+      await tester.tap(find.widgetWithText(TextButton, 'Vẫn ghi'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Thông báo này không còn trong danh sách'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('quick_amount')), findsNothing);
+      expect(find.textContaining('Thông báo trùng đã lọc'), findsNothing);
+    });
+
+    test('đọc dữ liệu từ native', () async {
+      native.filtered.addAll([
+        filteredMap('a', 1000, 'clock'),
+        {...filteredMap('hỏng', 0, 'content')},
+        {'id': 'thiếu', 'amount': 5000},
+      ]);
+      final list = await CaptureChannel.filtered();
+      expect(list.map((f) => f.capture.id), ['thiếu', 'a']);
+      expect(list.last.reasonLabel, 'cùng số tiền và giờ giao dịch');
+      expect(list.last.originalPackage, 'com.mbmobile');
+      expect(list.first.originalTime, isNull);
+      expect(list.first.reasonLabel, 'cùng số tiền, báo sát nhau');
+      expect(await CaptureChannel.restoreFiltered('không có'), isNull);
+      final c = await CaptureChannel.restoreFiltered('a');
+      expect(c!.amount, 1000);
+      await CaptureChannel.clearFiltered();
+      expect(native.filtered, isEmpty);
+    });
+
+    test('cài đặt lọc trùng mặc định bật, giữ được qua toMap/fromMap', () {
+      expect(const CaptureSettings().dedupe, isTrue);
+      expect(CaptureSettings.fromMap(const {}).dedupe, isTrue);
+      final off = const CaptureSettings().copyWith(dedupe: false);
+      expect(off.toMap()['dedupe'], false);
+      expect(CaptureSettings.fromMap(off.toMap()).dedupe, isFalse);
+      expect(off.copyWith(readSms: false).dedupe, isFalse);
+    });
+
+    test('tên kênh báo', () {
+      expect(sourceLabel('com.mbmobile'), 'MB Bank');
+      expect(sourceLabel('com.google.android.gm'), 'Gmail');
+      expect(sourceLabel('com.google.android.apps.messaging'), 'Tin nhắn SMS');
+      expect(sourceLabel('com.example.app'), 'com.example.app');
+      expect(sourceLabel(null), 'Ứng dụng khác');
+      expect(sourceLabel(''), 'Ứng dụng khác');
+    });
   });
 
   testWidgets('giao dịch chờ ở Tổng quan -> ghi', (tester) async {
