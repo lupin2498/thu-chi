@@ -31,6 +31,7 @@ void main() {
                 'content': r.content,
                 'balance': r.balance,
                 'bank': r.bankKey,
+                'directionKnown': r.directionKnown,
               },
       );
     }
