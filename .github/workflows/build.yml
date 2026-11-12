@@ -21,6 +21,8 @@ jobs:
     name: Test + APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      signing_sha256: ${{ steps.signing.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v5
 
@@ -44,46 +46,91 @@ jobs:
       - name: Kiểm thử Dart
         run: flutter test
 
-      # Khoá ký: dùng secret ANDROID_KEYSTORE_BASE64 nếu có; nếu không, tạo một lần và giữ trong cache
-      # để các bản sau cài đè lên được.
-      - name: Khôi phục khoá ký
-        id: keycache
+      # Khoá ký (APK phải cùng khoá thì mới cài đè lên bản trước, giữ được dữ liệu):
+      #  1. secret ANDROID_KEYSTORE_BASE64 nếu có;
+      #  2. nếu không: khoá tự tạo, giữ trong một bản nháp Release (chỉ người có quyền ghi repo thấy được)
+      #     để mọi nhánh và mọi lần build dùng chung một khoá;
+      #  3. actions/cache chỉ còn để lấy lại khoá của các bản build trước (cache bị xoá sau 7 ngày không dùng
+      #     và không dùng chung giữa các nhánh nên không đủ tin cậy).
+      - name: Khôi phục khoá ký (cache của các bản build trước)
         uses: actions/cache@v4
         with:
           path: ~/.android-signing
           key: android-signing-v1
 
       - name: Chuẩn bị khoá ký
+        id: signing
         env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNING_RELEASE: signing-key
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          mkdir -p ~/.android-signing
+          DIR="$HOME/.android-signing"
+          mkdir -p "$DIR"
           if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > ~/.android-signing/secret.jks
-            echo "ANDROID_KEYSTORE_PATH=$HOME/.android-signing/secret.jks" >> "$GITHUB_ENV"
-            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            KS="$DIR/secret.jks"; PASS="$KEYSTORE_PASSWORD"; ALIAS="$KEY_ALIAS"; KEYPASS="$KEY_PASSWORD"
+            echo "$KEYSTORE_B64" | base64 -d > "$KS"
+            SOURCE="secret"
           else
-            if [ ! -f ~/.android-signing/release.jks ]; then
-              keytool -genkeypair -v -keystore ~/.android-signing/release.jks \
-                -alias sothuchi -keyalg RSA -keysize 2048 -validity 10000 \
-                -storepass sothuchi-ci -keypass sothuchi-ci \
+            KS="$DIR/release.jks"; PASS=sothuchi-ci; ALIAS=sothuchi; KEYPASS=sothuchi-ci
+            valid() { [ -f "$1" ] && keytool -list -keystore "$1" -storepass "$PASS" -alias "$ALIAS" >/dev/null 2>&1; }
+            STORED="$RUNNER_TEMP/signing-stored"
+            rm -rf "$STORED" && mkdir -p "$STORED"
+            gh release download "$SIGNING_RELEASE" --repo "$GITHUB_REPOSITORY" --pattern release.jks --dir "$STORED" \
+              || echo "Chưa có bản nháp Release giữ khoá ký"
+            if valid "$STORED/release.jks"; then
+              cp "$STORED/release.jks" "$KS"
+              SOURCE="bản nháp Release"
+            elif valid "$KS"; then
+              SOURCE="cache của bản build trước"
+            else
+              rm -f "$KS"
+              keytool -genkeypair -keystore "$KS" \
+                -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass "$PASS" -keypass "$KEYPASS" \
                 -dname "CN=So Thu Chi, O=So Thu Chi, C=VN"
+              SOURCE="tạo mới"
             fi
-            echo "ANDROID_KEYSTORE_PATH=$HOME/.android-signing/release.jks" >> "$GITHUB_ENV"
-            echo "ANDROID_KEYSTORE_PASSWORD=sothuchi-ci" >> "$GITHUB_ENV"
-            echo "ANDROID_KEY_ALIAS=sothuchi" >> "$GITHUB_ENV"
-            echo "ANDROID_KEY_PASSWORD=sothuchi-ci" >> "$GITHUB_ENV"
+            if ! valid "$STORED/release.jks"; then
+              gh release create "$SIGNING_RELEASE" "$KS" --repo "$GITHUB_REPOSITORY" --draft \
+                --title "Khoá ký APK (bản nháp riêng tư – không xoá, không Publish)" \
+                --notes "Workflow build giữ khoá ký APK ở đây để mọi lần build dùng cùng một khoá (cài đè lên bản trước, giữ dữ liệu). Bản nháp chỉ người có quyền ghi repo mới thấy. Xoá bản nháp này thì bản build sau sẽ ký bằng khoá mới và phải gỡ app cũ trước khi cài." \
+                || echo "::warning::Không lưu được khoá ký vào bản nháp Release - lần build sau có thể ký bằng khoá khác"
+            fi
+            rm -rf "$STORED"
           fi
+          FP=$(keytool -list -v -keystore "$KS" -storepass "$PASS" -alias "$ALIAS" \
+            | grep -m1 'SHA256:' | sed 's/.*SHA256: *//; s/://g' | tr 'A-F' 'a-f')
+          if [ -z "$FP" ]; then echo "::error::Không đọc được khoá ký"; exit 1; fi
+          echo "Khoá ký lấy từ: $SOURCE - chứng chỉ SHA-256: $FP"
+          echo "sha256=$FP" >> "$GITHUB_OUTPUT"
+          echo "ANDROID_KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=$KEYPASS" >> "$GITHUB_ENV"
 
       - name: Build APK (bản tiêu chuẩn + bản đầy đủ)
         run: |
           flutter build apk --release --flavor standard
           flutter build apk --release --flavor full
+
+      # Thiếu cấu hình ký thì Gradle lặng lẽ dùng khoá debug -> chặn ngay ở đây.
+      - name: Kiểm tra chữ ký APK
+        env:
+          SIGNING_SHA256: ${{ steps.signing.outputs.sha256 }}
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
+          for f in app-standard-release.apk app-full-release.apk; do
+            D=$("$APKSIGNER" verify --print-certs "build/app/outputs/flutter-apk/$f" \
+              | grep -m1 'certificate SHA-256 digest' | sed 's/.*: *//')
+            echo "$f: $D"
+            if [ "$D" != "$SIGNING_SHA256" ]; then
+              echo "::error::$f không được ký bằng khoá phát hành ($SIGNING_SHA256)"; exit 1
+            fi
+          done
 
       # Bản tiêu chuẩn phải cài được qua Play Protect: không có quyền đọc thông báo / SMS / trợ năng / hiển thị trên app khác.
       - name: Kiểm tra quyền của bản tiêu chuẩn
@@ -190,4 +237,5 @@ jobs:
 
             **iPhone:** `SoThuChi-${{ steps.meta.outputs.version }}-unsigned.ipa` – cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple ID của bạn).
 
+            Chứng chỉ ký APK (SHA-256): `${{ needs.android.outputs.signing_sha256 }}` – APK cùng chứng chỉ thì cài đè lên nhau được.
             Commit: ${{ github.sha }}

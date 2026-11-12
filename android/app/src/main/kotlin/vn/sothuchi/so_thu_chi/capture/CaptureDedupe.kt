@@ -90,6 +90,8 @@ object CaptureDedupe {
         val bankApp: String?,
         /** Mã ngân hàng suy ra (từ gói hoặc từ nội dung). */
         val bank: String?,
+        /** Định danh của chính thông báo (khoá thông báo + thời điểm app đặt); null nếu không có. */
+        val postKey: String? = null,
     )
 
     /** Một giao dịch đã ghi nhận gần đây cùng các kênh đã báo về nó. */
@@ -113,8 +115,8 @@ object CaptureDedupe {
         val bank: String?,
     )
 
-    /** Một thông báo đã thấy: khoá nhận dạng + lúc thấy lần đầu. */
-    data class Post(val key: String, val t: Long)
+    /** Một thông báo đã thấy: khoá nội dung, lúc thấy lần đầu, định danh thông báo (nếu có). */
+    data class Post(val key: String, val t: Long, val notif: String? = null)
 
     data class Match(val seen: Seen, val reason: Reason)
 
@@ -181,7 +183,17 @@ object CaptureDedupe {
         return java.lang.Long.toHexString(h)
     }
 
-    fun signature(r: BankParser.Result, packageName: String?, title: String?, text: String): Signature {
+    /**
+     * [notificationKey]: khoá của thông báo trên hệ thống + thời điểm app đặt cho nó (Notification.when).
+     * App đăng lại đúng thông báo cũ (Gmail cập nhật nhóm thư...) thì giữ nguyên hai giá trị này.
+     */
+    fun signature(
+        r: BankParser.Result,
+        packageName: String?,
+        title: String?,
+        text: String,
+        notificationKey: String? = null,
+    ): Signature {
         val raw = listOfNotNull(title?.trim()?.takeIf { it.isNotEmpty() }, text.trim()).joinToString("\n")
         val full = normalize(raw)
         var content = normalize(r.content.orEmpty())
@@ -202,6 +214,7 @@ object CaptureDedupe {
             source = sourceKey(packageName, title),
             bankApp = BankApps.byPackage(packageName)?.key,
             bank = r.bankKey,
+            postKey = notificationKey?.let { hash(it) },
         )
     }
 
@@ -247,7 +260,8 @@ object CaptureDedupe {
     /** Hai kênh ghi giờ GD lệch nhau tối đa 1 phút (mỗi kênh lấy mốc giờ ở một bước khác nhau). */
     private fun clocksNear(a: List<String>, b: List<String>): Boolean = a.any { x ->
         b.any { y ->
-            val d = Math.floorMod(minutesOf(x) - minutesOf(y), 24 * 60)
+            val day = 24 * 60
+            val d = ((minutesOf(x) - minutesOf(y)) % day + day) % day
             d <= 1 || d >= 24 * 60 - 1
         }
     }
@@ -271,9 +285,12 @@ object CaptureDedupe {
 
         val posted = r.posts.firstOrNull { it.key == s.textKey }
         if (posted != null) {
+            val sameNotification = s.postKey != null && posted.notif == s.postKey
             return when {
-                // Có giờ GD / số dư: thông báo y hệt chắc chắn là cùng một giao dịch.
-                s.strongText -> if (sinceLast <= LONG_WINDOW_MS) strong(Reason.REPOST) else null
+                // Có giờ GD / số dư, hoặc đúng thông báo cũ được đăng lại (cùng định danh):
+                // chắc chắn là cùng một giao dịch.
+                s.strongText || sameNotification ->
+                    if (sinceLast <= LONG_WINDOW_MS) strong(Reason.REPOST) else null
                 // Không có gì để phân biệt: chỉ coi là đăng lại trong khoảng ngắn, và nhường cho
                 // bằng chứng rõ hơn (vd thư của một giao dịch mới cùng số tiền + nội dung).
                 now - posted.t in 0..REPOST_WINDOW_MS -> Evidence(Reason.REPOST, WEAK_REPOST_RANK)
@@ -350,7 +367,7 @@ object CaptureDedupe {
             val entry = Seen(
                 id = id, t = now, last = now, amount = s.amount, income = s.income,
                 directionKnown = s.directionKnown, balance = s.balance, content = s.content,
-                texts = listOf(s.text), posts = listOf(Post(s.textKey, now)), clocks = s.clocks,
+                texts = listOf(s.text), posts = listOf(Post(s.textKey, now, s.postKey)), clocks = s.clocks,
                 sources = listOf(s.source), bankApp = s.bankApp, bank = s.bank,
             )
             return Outcome(null, (kept + entry).takeLast(MAX_ENTRIES))
@@ -364,7 +381,8 @@ object CaptureDedupe {
             balance = r.balance ?: s.balance,
             content = r.content.ifEmpty { s.content },
             texts = (r.texts + s.text).distinct().take(MAX_TEXTS),
-            posts = (if (r.posts.any { it.key == s.textKey }) r.posts else r.posts + Post(s.textKey, now)).takeLast(MAX_KEYS),
+            posts = (if (r.posts.any { it.key == s.textKey }) r.posts else r.posts + Post(s.textKey, now, s.postKey))
+                .takeLast(MAX_KEYS),
             clocks = (r.clocks + s.clocks).distinct().take(MAX_CLOCKS),
             sources = (r.sources + s.source).distinct(),
             bankApp = r.bankApp ?: s.bankApp,
@@ -393,7 +411,14 @@ object CaptureDedupe {
                     .put("balance", e.balance ?: JSONObject.NULL)
                     .put("content", e.content)
                     .put("texts", JSONArray(e.texts))
-                    .put("posts", JSONArray().also { a -> e.posts.forEach { a.put(JSONObject().put("k", it.key).put("t", it.t)) } })
+                    .put(
+                        "posts",
+                        JSONArray().also { a ->
+                            e.posts.forEach {
+                                a.put(JSONObject().put("k", it.key).put("t", it.t).put("n", it.notif ?: JSONObject.NULL))
+                            }
+                        },
+                    )
                     .put("clocks", JSONArray(e.clocks))
                     .put("sources", JSONArray(e.sources))
                     .put("bankApp", e.bankApp ?: JSONObject.NULL)
@@ -424,7 +449,9 @@ object CaptureDedupe {
                     posts = o.optJSONArray("posts").let { a ->
                         if (a == null) emptyList() else (0 until a.length()).mapNotNull { j ->
                             val p = a.optJSONObject(j) ?: return@mapNotNull null
-                            p.optString("k").ifEmpty { null }?.let { Post(it, p.optLong("t")) }
+                            p.optString("k").ifEmpty { null }?.let {
+                                Post(it, p.optLong("t"), if (p.isNull("n")) null else p.optString("n").ifEmpty { null })
+                            }
                         }
                     },
                     clocks = o.optJSONArray("clocks").strings(),

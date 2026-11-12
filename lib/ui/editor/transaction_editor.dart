@@ -105,7 +105,11 @@ class _TransactionEditorState extends State<TransactionEditor> {
       text,
       CategoryKind.forTxn(_type),
     );
-    if (id != null && mounted && !_userPickedCategory) {
+    // Hạng mục đã xoá (bị ẩn vì còn giao dịch cũ) thì không gợi ý lại.
+    if (id != null &&
+        mounted &&
+        !_userPickedCategory &&
+        state.categoryById(id)?.archived == false) {
       setState(() => _categoryId = id);
     }
   }

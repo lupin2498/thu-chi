@@ -27,10 +27,16 @@ class CaptureDedupeTest {
         content: String = "NGUYEN VAN A chuyen tien an trua",
     ) = "TK 0xxx6789|GD: ${amount}VND 12/11/26 $clock |SD: ${balance}VND|ND: $content"
 
-    private fun sig(pkg: String, title: String?, text: String, strict: Boolean = false): CaptureDedupe.Signature {
+    private fun sig(
+        pkg: String,
+        title: String?,
+        text: String,
+        strict: Boolean = false,
+        notif: String? = null,
+    ): CaptureDedupe.Signature {
         val r = BankParser.parse(text, title, pkg, strict)
         assertNotNull("Không phân tích được: $text", r)
-        return CaptureDedupe.signature(r!!, pkg, title, text)
+        return CaptureDedupe.signature(r!!, pkg, title, text, notif)
     }
 
     /** Sổ dấu vết giả lập: đăng lần lượt các thông báo theo thời gian. */
@@ -40,8 +46,8 @@ class CaptureDedupeTest {
         var lastMatch: CaptureDedupe.Match? = null
 
         /** Trả lý do bị lọc trùng, hoặc null nếu được ghi nhận là giao dịch mới. */
-        fun post(pkg: String, title: String?, text: String, at: Long, strict: Boolean = false): Reason? {
-            val out = CaptureDedupe.check(seen, sig(pkg, title, text, strict), "c${n++}", t0 + at, crossCheck)
+        fun post(pkg: String, title: String?, text: String, at: Long, strict: Boolean = false, notif: String? = null): Reason? {
+            val out = CaptureDedupe.check(seen, sig(pkg, title, text, strict, notif), "c${n++}", t0 + at, crossCheck)
             seen = out.seen
             lastMatch = out.match
             return out.match?.reason
@@ -50,8 +56,8 @@ class CaptureDedupeTest {
         fun app(text: String, at: Long) = post(mb, mbTitle, text, at)
 
         /** Thông báo của Gmail: tiêu đề = người gửi, nội dung = tiêu đề thư + trích đoạn. */
-        fun mail(body: String, at: Long, sender: String = "MB Bank") =
-            post(gmail, sender, "Thông báo biến động số dư\n$body", at, strict = true)
+        fun mail(body: String, at: Long, sender: String = "MB Bank", notif: String? = null) =
+            post(gmail, sender, "Thông báo biến động số dư\n$body", at, strict = true, notif = notif)
     }
 
     // ------------------------------------------------ Ngân hàng báo, Gmail báo lại
@@ -71,6 +77,27 @@ class CaptureDedupeTest {
         val b = Book()
         b.app(mbText(), 0)
         assertNull(b.mail(mail, 13 * hour))
+    }
+
+    @Test
+    fun gmailRepostsSameNotificationHoursLater() {
+        // Trích đoạn thư không có giờ GD / số dư: chỉ nhận ra "đăng lại" nhờ định danh thông báo.
+        val mail = "Giao dịch: -150,000 VND. Nội dung: NGUYEN VAN A chuyen tien an trua"
+        val b = Book()
+        b.app(mbText(), 0)
+        assertEquals(Reason.CONTENT, b.mail(mail, 5 * min, notif = "0|gm|7|null|1|t1"))
+        assertEquals(Reason.REPOST, b.mail(mail, 3 * hour, notif = "0|gm|7|null|1|t1"))
+        assertEquals(1, b.seen.size)
+        // Thư khác (thời điểm khác) cùng số tiền + nội dung, 3 giờ sau: giao dịch mới.
+        assertNull(b.mail(mail, 3 * hour + min, notif = "0|gm|8|null|1|t2"))
+        // ...và thông báo app ngân hàng của giao dịch mới đó bị lọc vì thư đã báo trước.
+        assertEquals(Reason.CONTENT, b.app(mbText(clock = "13:06", balance = "2,195,678"), 3 * hour + 2 * min))
+        assertEquals(2, b.seen.size)
+        // Không có định danh: chỉ coi là đăng lại trong 10 phút.
+        val c = Book()
+        c.app(mbText(), 0)
+        c.mail(mail, min)
+        assertNull(c.mail(mail, 3 * hour))
     }
 
     @Test

@@ -219,7 +219,7 @@ class MoreScreen extends StatelessWidget {
       final res = await FilePicker.pickFiles(type: FileType.any);
       if (res.isEmpty) return;
       final bytes = await res.first.readAsBytes();
-      final data = jsonDecode(utf8.decode(bytes));
+      final data = decodeBackupJson(bytes);
       if (data is! Map) throw const FormatException('Tệp không hợp lệ');
       if (!context.mounted) return;
       final ok = await confirmDialog(
@@ -236,4 +236,12 @@ class MoreScreen extends StatelessWidget {
       if (context.mounted) showSnack(context, 'Không khôi phục được: $e');
     }
   }
+}
+
+/// Đọc tệp sao lưu JSON; bỏ ký tự BOM mà một số trình soạn thảo trên máy tính
+/// thêm vào đầu tệp (jsonDecode báo lỗi nếu còn BOM).
+Object? decodeBackupJson(List<int> bytes) {
+  var text = utf8.decode(bytes);
+  if (text.startsWith('\uFEFF')) text = text.substring(1);
+  return jsonDecode(text);
 }

@@ -26,6 +26,8 @@ object CaptureProcessor {
         dedupe: Boolean = true,
         present: Boolean = true,
         now: Long = System.currentTimeMillis(),
+        /** Định danh của thông báo trên hệ thống (xem [CaptureDedupe.signature]). */
+        notificationKey: String? = null,
     ): Outcome {
         val settings = CaptureStore.settings(ctx)
         if (!settings.enabled) return Outcome.Disabled
@@ -43,7 +45,7 @@ object CaptureProcessor {
             .put("balance", r.balance ?: JSONObject.NULL)
             .put("time", if (postTime > 0) postTime else now)
         if (dedupe) {
-            val sig = CaptureDedupe.signature(r, packageName, title, text)
+            val sig = CaptureDedupe.signature(r, packageName, title, text, notificationKey)
             val match = CaptureStore.checkDuplicate(ctx, sig, id, now, crossCheck = settings.dedupe)
             if (match != null) {
                 Log.d(TAG, "Bỏ qua thông báo trùng ${r.amount} (${match.reason.key}) từ $packageName")

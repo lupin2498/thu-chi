@@ -105,6 +105,17 @@ class ListenerTest {
     }
 
     @Test
+    fun notificationKeyIdentifiesRepost() {
+        val a = sbn("com.google.android.gm", "MB Bank", "x")
+        val key = BankNotificationListener.notificationKey(a)
+        assertNotNull(key)
+        assertTrue(key!!.startsWith(a.key + "|"))
+        assertEquals(key, BankNotificationListener.notificationKey(a))
+        a.notification.`when` = 0
+        assertEquals(null, BankNotificationListener.notificationKey(a))
+    }
+
+    @Test
     fun gmailRepeatOfBankNotificationIsFiltered() {
         val service = Robolectric.setupService(BankNotificationListener::class.java)
         val mail = "Thông báo biến động số dư\nKính gửi Quý khách, tài khoản 0xxx6789 vừa phát sinh giao dịch: " +

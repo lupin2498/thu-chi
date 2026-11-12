@@ -149,6 +149,18 @@ void main() {
     expect((await repo.transactions(search: '45.000')).length, 1);
     expect((await repo.transactions(search: 'xyz')).length, 0);
     expect((await repo.transactions(search: '  ')).length, 2);
+    expect((await repo.transactions(search: '30000 đ')).length, 1);
+    // Chữ lẫn số: chỉ tìm theo diễn giải, không khớp mọi số tiền chứa "11".
+    await repo.insertTransaction(
+      txn(TxnType.expense, 3000000, note: 'Tiền nhà tháng 11'),
+    );
+    await repo.insertTransaction(txn(TxnType.expense, 110000, note: 'Gửi xe'));
+    expect((await repo.transactions(search: 'tháng 11')).map((t) => t.note), [
+      'Tiền nhà tháng 11',
+    ]);
+    expect((await repo.transactions(search: '110')).map((t) => t.note), [
+      'Gửi xe',
+    ]);
   });
 
   test('báo cáo theo hạng mục và theo tháng', () async {

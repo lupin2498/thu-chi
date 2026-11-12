@@ -234,8 +234,10 @@ class FinanceRepository {
     var list = rows.map(TransactionRecord.fromMap).toList();
     final q = search == null ? '' : normalizeForSearch(search);
     if (q.isNotEmpty) {
-      // Tìm không dấu theo diễn giải hoặc số tiền.
-      final digits = q.replaceAll(RegExp(r'[^0-9]'), '');
+      // Tìm không dấu theo diễn giải; chỉ tìm theo số tiền khi gõ toàn số
+      // ("150.000", "45000 đ"), để "tháng 11" không khớp mọi số tiền có "11".
+      final amountQuery = RegExp(r'^\d[\d., ]*(d|vnd)?$').hasMatch(q);
+      final digits = amountQuery ? q.replaceAll(RegExp(r'[^0-9]'), '') : '';
       list = list.where((t) {
         if (normalizeForSearch(t.note).contains(q)) return true;
         if (t.rawText != null && normalizeForSearch(t.rawText!).contains(q)) {

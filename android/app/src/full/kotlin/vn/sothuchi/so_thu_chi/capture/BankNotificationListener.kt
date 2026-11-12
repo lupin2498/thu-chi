@@ -47,10 +47,20 @@ class BankNotificationListener : NotificationListenerService() {
 
         val (title, body) = extractText(n.extras ?: return)
         if (body.isBlank()) return
-        CaptureProcessor.process(this, pkg, title, body, strict, sbn.postTime)
+        CaptureProcessor.process(this, pkg, title, body, strict, sbn.postTime, notificationKey = notificationKey(sbn))
     }
 
     companion object {
+        /**
+         * Định danh của một thông báo: khoá trên hệ thống + thời điểm app đặt (Notification.when).
+         * App đăng lại đúng thông báo cũ (vd Gmail cập nhật nhóm thư) thì giá trị này không đổi.
+         */
+        fun notificationKey(sbn: StatusBarNotification): String? {
+            val time = sbn.notification?.`when` ?: return null
+            if (time <= 0) return null
+            return "${sbn.key}|$time"
+        }
+
         /** Lấy tiêu đề + nội dung đầy đủ nhất của thông báo. */
         fun extractText(extras: Bundle): Pair<String?, String> {
             val title = (extras.getCharSequence(Notification.EXTRA_TITLE_BIG)

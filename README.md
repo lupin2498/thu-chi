@@ -67,7 +67,8 @@ flutter build ios --release --no-codesign   # trên macOS
 
 GitHub Actions (`.github/workflows/build.yml`) tự build APK + IPA chưa ký và đăng lên mục **Releases** mỗi lần push.
 Để APK luôn cùng chữ ký giữa các bản, có thể đặt secret `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; nếu không đặt, workflow tự tạo khoá và giữ trong cache.
+`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; nếu không đặt, workflow tự tạo khoá và giữ trong bản nháp Release
+`signing-key` (chỉ người có quyền ghi repo thấy; đừng xoá). Mỗi bản phát hành ghi chứng chỉ SHA-256 của APK.
 
 IPA chưa ký: cài bằng Sideloadly / AltStore / TrollStore (ký bằng Apple ID).
 

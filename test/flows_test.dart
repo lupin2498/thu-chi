@@ -1,5 +1,7 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,9 +9,11 @@ import 'package:so_thu_chi/app.dart';
 import 'package:so_thu_chi/capture/bank_apps.dart';
 import 'package:so_thu_chi/capture/capture_channel.dart';
 import 'package:so_thu_chi/data/models.dart';
+import 'package:so_thu_chi/ui/editor/transaction_editor.dart';
 import 'package:so_thu_chi/ui/more/accounts_screen.dart';
 import 'package:so_thu_chi/ui/more/auto_capture_screen.dart';
 import 'package:so_thu_chi/ui/more/categories_screen.dart';
+import 'package:so_thu_chi/ui/more/more_screen.dart';
 import 'package:so_thu_chi/ui/quick_add/popup_app.dart';
 
 import 'helpers.dart';
@@ -256,10 +260,7 @@ void main() {
       native.filtered.add(filteredMap('f1', 150000, 'time'));
       final state = await createState();
       await pushPage(tester, state, const AutoCaptureScreen());
-      expect(
-        find.textContaining('cùng số tiền, báo sát nhau'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('cùng số tiền, báo sát nhau'), findsOneWidget);
       await tester.tap(find.widgetWithText(TextButton, 'Vẫn ghi'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Để sau'));
@@ -269,7 +270,9 @@ void main() {
       expect(find.textContaining('Thông báo trùng đã lọc'), findsNothing);
     });
 
-    testWidgets('thông báo đã bị xoá khỏi danh sách ở nơi khác', (tester) async {
+    testWidgets('thông báo đã bị xoá khỏi danh sách ở nơi khác', (
+      tester,
+    ) async {
       setPhoneSize(tester, height: 2800);
       native.filtered.add(filteredMap('f1', 150000, 'content'));
       final state = await createState();
@@ -676,6 +679,48 @@ void main() {
       await tester.pumpAndSettle();
       expect((await state.repo.transactions()).single.amount, 120000);
     });
+  });
+
+  testWidgets('ghi chép: không gợi ý lại hạng mục đã xoá', (tester) async {
+    setPhoneSize(tester);
+    final state = await createState();
+    final acc = state.accounts.first.id!;
+    final market = state
+        .categoriesOf(CategoryKind.expense)
+        .firstWhere((c) => c.icon == 'market');
+    await state.addTransaction(
+      TransactionRecord(
+        type: TxnType.expense,
+        amount: 50000,
+        accountId: acc,
+        categoryId: market.id,
+        note: 'Rau cho mèo',
+        date: DateTime(2026, 11, 1),
+      ),
+    );
+    // Hạng mục đã dùng -> bị ẩn khi xoá.
+    await state.deleteCategory(market.id!);
+    await pushPage(tester, state, const TransactionEditor());
+    await tester.enterText(find.byKey(const Key('editor_amount')), '20000');
+    await tester.tap(find.text('Rau cho mèo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('editor_save')));
+    await tester.pumpAndSettle();
+    final saved = (await state.repo.transactions()).firstWhere(
+      (t) => t.amount == 20000,
+    );
+    expect(saved.note, 'Rau cho mèo');
+    expect(state.categoryById(saved.categoryId)?.archived, isFalse);
+  });
+
+  test('đọc tệp sao lưu có BOM', () {
+    final json = '{"app":"so_thu_chi","accounts":[]}';
+    expect(decodeBackupJson(utf8.encode(json)), isA<Map>());
+    expect(decodeBackupJson(utf8.encode('\uFEFF$json')), isA<Map>());
+    expect(
+      () => decodeBackupJson(utf8.encode('không phải json')),
+      throwsFormatException,
+    );
   });
 
   test('CaptureData.fromMap chịu được dữ liệu thiếu', () {
